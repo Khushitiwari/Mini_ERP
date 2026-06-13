@@ -2,6 +2,7 @@
   "name": "shiv-furniture-erp-backend",
   "version": "1.0.0",
   "description": "Mini ERP backend for Shiv Furniture Works",
+  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/server.js",

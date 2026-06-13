@@ -1,9 +1,9 @@
-const prisma = require('../config/db');
-const purchaseService = require('../services/purchaseService');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import * as purchaseService from '../services/purchaseService.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const getPurchaseOrders = async (req, res, next) => {
+export const getPurchaseOrders = async (req, res, next) => {
   try {
     const { status, vendorId } = req.query;
     const where = {};
@@ -26,7 +26,7 @@ const getPurchaseOrders = async (req, res, next) => {
   }
 };
 
-const getPurchaseOrderById = async (req, res, next) => {
+export const getPurchaseOrderById = async (req, res, next) => {
   try {
     const order = await prisma.purchaseOrder.findUnique({
       where: { id: parseInt(req.params.id, 10) },
@@ -47,7 +47,7 @@ const getPurchaseOrderById = async (req, res, next) => {
   }
 };
 
-const createPurchaseOrder = async (req, res, next) => {
+export const createPurchaseOrder = async (req, res, next) => {
   try {
     const { vendorId, items } = req.body;
     const order = await purchaseService.createPurchaseOrder(vendorId, items, req.user.id);
@@ -60,7 +60,7 @@ const createPurchaseOrder = async (req, res, next) => {
   }
 };
 
-const confirmPurchaseOrder = async (req, res, next) => {
+export const confirmPurchaseOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.purchaseOrder.findUnique({ where: { id: orderId } });
@@ -74,7 +74,7 @@ const confirmPurchaseOrder = async (req, res, next) => {
   }
 };
 
-const receivePurchaseOrder = async (req, res, next) => {
+export const receivePurchaseOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const { items } = req.body;
@@ -89,7 +89,7 @@ const receivePurchaseOrder = async (req, res, next) => {
   }
 };
 
-const cancelPurchaseOrder = async (req, res, next) => {
+export const cancelPurchaseOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.purchaseOrder.findUnique({ where: { id: orderId } });
@@ -101,13 +101,4 @@ const cancelPurchaseOrder = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getPurchaseOrders,
-  getPurchaseOrderById,
-  createPurchaseOrder,
-  confirmPurchaseOrder,
-  receivePurchaseOrder,
-  cancelPurchaseOrder,
 };

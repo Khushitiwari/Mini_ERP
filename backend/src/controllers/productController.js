@@ -1,8 +1,9 @@
-const prisma = require('../config/db');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
+import * as stockService from '../services/stockService.js';
 
-const getProducts = async (req, res, next) => {
+export const getProducts = async (req, res, next) => {
   try {
     const { type, procurementStrategy } = req.query;
     const where = {};
@@ -21,7 +22,7 @@ const getProducts = async (req, res, next) => {
   }
 };
 
-const getProductById = async (req, res, next) => {
+export const getProductById = async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(req.params.id, 10) },
@@ -38,7 +39,7 @@ const getProductById = async (req, res, next) => {
   }
 };
 
-const createProduct = async (req, res, next) => {
+export const createProduct = async (req, res, next) => {
   try {
     const data = { ...req.body };
     const initialQty = data.onHandQty || 0;
@@ -50,7 +51,6 @@ const createProduct = async (req, res, next) => {
     });
 
     if (initialQty > 0) {
-      const stockService = require('../services/stockService');
       await stockService.updateStock(product.id, initialQty, 'MANUAL_ADJUSTMENT', null, null, req.user.id);
     }
 
@@ -67,7 +67,7 @@ const createProduct = async (req, res, next) => {
   }
 };
 
-const updateProduct = async (req, res, next) => {
+export const updateProduct = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldProduct = await prisma.product.findUnique({ where: { id } });
@@ -93,7 +93,7 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-const deleteProduct = async (req, res, next) => {
+export const deleteProduct = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldProduct = await prisma.product.findUnique({ where: { id } });
@@ -109,12 +109,4 @@ const deleteProduct = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
 };

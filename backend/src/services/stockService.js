@@ -1,5 +1,5 @@
-const prisma = require('../config/db');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
 /**
  * Central stock module — the ONLY place that changes onHandQty.
@@ -144,7 +144,7 @@ const getStockLedger = async (productId) => {
   });
 };
 
-module.exports = {
+export {
   updateStock,
   getFreeToUseQty,
   reserveStock,

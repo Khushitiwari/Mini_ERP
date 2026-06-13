@@ -1,9 +1,9 @@
-const express = require('express');
-const authController = require('../controllers/authController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { allowRoles } = require('../middleware/roleMiddleware');
-const { validate, registerSchema, loginSchema } = require('../utils/validators');
-const { ROLES } = require('../utils/constants');
+import express from 'express';
+import * as authController from '../controllers/authController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { allowRoles } from '../middleware/roleMiddleware.js';
+import { validate, registerSchema, loginSchema } from '../utils/validators.js';
+import { ROLES } from '../utils/constants.js';
 
 const router = express.Router();
 
@@ -17,4 +17,4 @@ router.post(
   authController.register
 );
 
-module.exports = router;
+export default router;

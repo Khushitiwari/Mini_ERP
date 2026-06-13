@@ -1,9 +1,9 @@
-const express = require('express');
-const manufacturingOrderController = require('../controllers/manufacturingOrderController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { allowRoles } = require('../middleware/roleMiddleware');
-const { validate, manufacturingOrderSchema } = require('../utils/validators');
-const { ROLES, ROLE_GROUPS } = require('../utils/constants');
+import express from 'express';
+import * as manufacturingOrderController from '../controllers/manufacturingOrderController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { allowRoles } from '../middleware/roleMiddleware.js';
+import { validate, manufacturingOrderSchema } from '../utils/validators.js';
+import { ROLES, ROLE_GROUPS } from '../utils/constants.js';
 
 const router = express.Router();
 const fullAccess = [...ROLE_GROUPS.MANUFACTURING_FULL];
@@ -25,4 +25,4 @@ router.put('/:id/work-orders/:woId/complete', allowRoles(...fullAccess), manufac
 router.put('/:id/complete', allowRoles(...fullAccess), manufacturingOrderController.completeManufacturingOrder);
 router.put('/:id/cancel', allowRoles(...fullAccess), manufacturingOrderController.cancelManufacturingOrder);
 
-module.exports = router;
+export default router;

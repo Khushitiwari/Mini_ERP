@@ -1,7 +1,7 @@
-const express = require('express');
-const customerController = require('../controllers/customerController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { validate, customerSchema } = require('../utils/validators');
+import express from 'express';
+import * as customerController from '../controllers/customerController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { validate, customerSchema } from '../utils/validators.js';
 
 const router = express.Router();
 
@@ -13,4 +13,4 @@ router.post('/', validate(customerSchema), customerController.createCustomer);
 router.put('/:id', validate(customerSchema), customerController.updateCustomer);
 router.delete('/:id', customerController.deleteCustomer);
 
-module.exports = router;
+export default router;

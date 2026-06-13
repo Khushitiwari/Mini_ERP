@@ -1,9 +1,9 @@
-const express = require('express');
-const bomController = require('../controllers/bomController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { allowRoles } = require('../middleware/roleMiddleware');
-const { validate, bomSchema } = require('../utils/validators');
-const { ROLES, ROLE_GROUPS } = require('../utils/constants');
+import express from 'express';
+import * as bomController from '../controllers/bomController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { allowRoles } from '../middleware/roleMiddleware.js';
+import { validate, bomSchema } from '../utils/validators.js';
+import { ROLES, ROLE_GROUPS } from '../utils/constants.js';
 
 const router = express.Router();
 const fullAccess = [...ROLE_GROUPS.BOM_FULL, ROLES.OWNER];
@@ -22,4 +22,4 @@ router.get('/:productId', allowRoles(...readAccess), bomController.getBomByProdu
 router.post('/', allowRoles(...fullAccess), validate(bomSchema), bomController.createBom);
 router.put('/:id', allowRoles(...fullAccess), bomController.updateBom);
 
-module.exports = router;
+export default router;

@@ -1,9 +1,9 @@
-const prisma = require('../config/db');
-const salesService = require('../services/salesService');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import * as salesService from '../services/salesService.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const getSalesOrders = async (req, res, next) => {
+export const getSalesOrders = async (req, res, next) => {
   try {
     const { status, customerId } = req.query;
     const where = {};
@@ -26,7 +26,7 @@ const getSalesOrders = async (req, res, next) => {
   }
 };
 
-const getSalesOrderById = async (req, res, next) => {
+export const getSalesOrderById = async (req, res, next) => {
   try {
     const order = await prisma.salesOrder.findUnique({
       where: { id: parseInt(req.params.id, 10) },
@@ -47,7 +47,7 @@ const getSalesOrderById = async (req, res, next) => {
   }
 };
 
-const createSalesOrder = async (req, res, next) => {
+export const createSalesOrder = async (req, res, next) => {
   try {
     const { customerId, items } = req.body;
     const order = await salesService.createSalesOrder(customerId, items, req.user.id);
@@ -60,7 +60,7 @@ const createSalesOrder = async (req, res, next) => {
   }
 };
 
-const confirmSalesOrder = async (req, res, next) => {
+export const confirmSalesOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.salesOrder.findUnique({ where: { id: orderId } });
@@ -74,7 +74,7 @@ const confirmSalesOrder = async (req, res, next) => {
   }
 };
 
-const deliverSalesOrder = async (req, res, next) => {
+export const deliverSalesOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const { items } = req.body;
@@ -89,7 +89,7 @@ const deliverSalesOrder = async (req, res, next) => {
   }
 };
 
-const cancelSalesOrder = async (req, res, next) => {
+export const cancelSalesOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.salesOrder.findUnique({ where: { id: orderId } });
@@ -101,13 +101,4 @@ const cancelSalesOrder = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getSalesOrders,
-  getSalesOrderById,
-  createSalesOrder,
-  confirmSalesOrder,
-  deliverSalesOrder,
-  cancelSalesOrder,
 };

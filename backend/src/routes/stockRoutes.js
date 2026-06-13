@@ -1,8 +1,8 @@
-const express = require('express');
-const stockController = require('../controllers/stockController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { allowRoles } = require('../middleware/roleMiddleware');
-const { ROLES, ROLE_GROUPS } = require('../utils/constants');
+import express from 'express';
+import * as stockController from '../controllers/stockController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { allowRoles } from '../middleware/roleMiddleware.js';
+import { ROLES, ROLE_GROUPS } from '../utils/constants.js';
 
 const router = express.Router();
 const fullAccess = [...ROLE_GROUPS.STOCK_FULL, ROLES.OWNER];
@@ -22,4 +22,4 @@ router.get('/:productId/ledger', allowRoles(...readAccess), stockController.getS
 router.get('/:productId', allowRoles(...readAccess), stockController.getStockByProductId);
 router.post('/:productId/adjust', allowRoles(...fullAccess), stockController.adjustStock);
 
-module.exports = router;
+export default router;

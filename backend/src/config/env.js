@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 
 const env = {
   port: parseInt(process.env.PORT || '5000', 10),
@@ -7,4 +7,4 @@ const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
 };
 
-module.exports = env;
+export default env;

@@ -1,6 +1,6 @@
-const { z } = require('zod');
+import { z } from 'zod';
 
-const validate = (schema) => (req, res, next) => {
+export const validate = (schema) => (req, res, next) => {
   try {
     schema.parse({
       body: req.body,
@@ -19,7 +19,7 @@ const validate = (schema) => (req, res, next) => {
   }
 };
 
-const registerSchema = z.object({
+export const registerSchema = z.object({
   body: z.object({
     name: z.string().min(1),
     email: z.string().email(),
@@ -31,14 +31,14 @@ const registerSchema = z.object({
   }),
 });
 
-const loginSchema = z.object({
+export const loginSchema = z.object({
   body: z.object({
     email: z.string().email(),
     password: z.string().min(1),
   }),
 });
 
-const productSchema = z.object({
+export const productSchema = z.object({
   body: z.object({
     name: z.string().min(1),
     sku: z.string().min(1),
@@ -53,7 +53,7 @@ const productSchema = z.object({
   }),
 });
 
-const customerSchema = z.object({
+export const customerSchema = z.object({
   body: z.object({
     name: z.string().min(1),
     email: z.string().email().optional().nullable(),
@@ -62,7 +62,7 @@ const customerSchema = z.object({
   }),
 });
 
-const vendorSchema = z.object({
+export const vendorSchema = z.object({
   body: z.object({
     name: z.string().min(1),
     email: z.string().email().optional().nullable(),
@@ -71,66 +71,61 @@ const vendorSchema = z.object({
   }),
 });
 
-const bomSchema = z.object({
+export const bomSchema = z.object({
   body: z.object({
     finishedProductId: z.number().int(),
-    components: z.array(
-      z.object({
-        componentProductId: z.number().int(),
-        quantityRequired: z.number().positive(),
-      })
-    ).min(1),
-    operations: z.array(
-      z.object({
-        operationName: z.string().min(1),
-        durationMinutes: z.number().int().positive(),
-        workCenter: z.string().min(1),
-      })
-    ).optional(),
+    components: z
+      .array(
+        z.object({
+          componentProductId: z.number().int(),
+          quantityRequired: z.number().positive(),
+        })
+      )
+      .min(1),
+    operations: z
+      .array(
+        z.object({
+          operationName: z.string().min(1),
+          durationMinutes: z.number().int().positive(),
+          workCenter: z.string().min(1),
+        })
+      )
+      .optional(),
   }),
 });
 
-const salesOrderSchema = z.object({
+export const salesOrderSchema = z.object({
   body: z.object({
     customerId: z.number().int(),
-    items: z.array(
-      z.object({
-        productId: z.number().int(),
-        quantity: z.number().int().positive(),
-      })
-    ).min(1),
+    items: z
+      .array(
+        z.object({
+          productId: z.number().int(),
+          quantity: z.number().int().positive(),
+        })
+      )
+      .min(1),
   }),
 });
 
-const purchaseOrderSchema = z.object({
+export const purchaseOrderSchema = z.object({
   body: z.object({
     vendorId: z.number().int(),
-    items: z.array(
-      z.object({
-        productId: z.number().int(),
-        quantity: z.number().int().positive(),
-      })
-    ).min(1),
+    items: z
+      .array(
+        z.object({
+          productId: z.number().int(),
+          quantity: z.number().int().positive(),
+        })
+      )
+      .min(1),
   }),
 });
 
-const manufacturingOrderSchema = z.object({
+export const manufacturingOrderSchema = z.object({
   body: z.object({
     productId: z.number().int(),
     quantity: z.number().int().positive(),
     assignedTo: z.number().int().nullable().optional(),
   }),
 });
-
-module.exports = {
-  validate,
-  registerSchema,
-  loginSchema,
-  productSchema,
-  customerSchema,
-  vendorSchema,
-  bomSchema,
-  salesOrderSchema,
-  purchaseOrderSchema,
-  manufacturingOrderSchema,
-};

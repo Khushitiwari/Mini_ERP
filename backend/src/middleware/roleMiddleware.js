@@ -1,6 +1,6 @@
-const { errorResponse } = require('../utils/apiResponse');
+import { errorResponse } from '../utils/apiResponse.js';
 
-const allowRoles = (...roles) => {
+export const allowRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return errorResponse(res, 'Authentication required', 401);
@@ -13,5 +13,3 @@ const allowRoles = (...roles) => {
     next();
   };
 };
-
-module.exports = { allowRoles };

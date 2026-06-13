@@ -1,15 +1,15 @@
-const express = require('express');
-const authRoutes = require('./authRoutes');
-const productRoutes = require('./productRoutes');
-const customerRoutes = require('./customerRoutes');
-const vendorRoutes = require('./vendorRoutes');
-const bomRoutes = require('./bomRoutes');
-const salesOrderRoutes = require('./salesOrderRoutes');
-const purchaseOrderRoutes = require('./purchaseOrderRoutes');
-const manufacturingOrderRoutes = require('./manufacturingOrderRoutes');
-const stockRoutes = require('./stockRoutes');
-const dashboardRoutes = require('./dashboardRoutes');
-const auditLogRoutes = require('./auditLogRoutes');
+import express from 'express';
+import authRoutes from './authRoutes.js';
+import productRoutes from './productRoutes.js';
+import customerRoutes from './customerRoutes.js';
+import vendorRoutes from './vendorRoutes.js';
+import bomRoutes from './bomRoutes.js';
+import salesOrderRoutes from './salesOrderRoutes.js';
+import purchaseOrderRoutes from './purchaseOrderRoutes.js';
+import manufacturingOrderRoutes from './manufacturingOrderRoutes.js';
+import stockRoutes from './stockRoutes.js';
+import dashboardRoutes from './dashboardRoutes.js';
+import auditLogRoutes from './auditLogRoutes.js';
 
 const router = express.Router();
 
@@ -25,4 +25,4 @@ router.use('/stock', stockRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/audit-logs', auditLogRoutes);
 
-module.exports = router;
+export default router;

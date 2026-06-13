@@ -1,5 +1,5 @@
-const bcrypt = require('bcryptjs');
-const prisma = require('../config/db');
+import bcrypt from 'bcryptjs';
+import prisma from '../config/db.js';
 
 async function main() {
   console.log('Seeding Shiv Furniture Works ERP database...');

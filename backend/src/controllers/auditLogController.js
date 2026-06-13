@@ -1,7 +1,7 @@
-const prisma = require('../config/db');
-const { successResponse } = require('../utils/apiResponse');
+import prisma from '../config/db.js';
+import { successResponse } from '../utils/apiResponse.js';
 
-const getAuditLogs = async (req, res, next) => {
+export const getAuditLogs = async (req, res, next) => {
   try {
     const { entityType, userId, action, startDate, endDate } = req.query;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -49,5 +49,3 @@ const getAuditLogs = async (req, res, next) => {
     next(err);
   }
 };
-
-module.exports = { getAuditLogs };

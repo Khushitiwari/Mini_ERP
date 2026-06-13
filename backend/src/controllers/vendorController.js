@@ -1,8 +1,8 @@
-const prisma = require('../config/db');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const getVendors = async (req, res, next) => {
+export const getVendors = async (req, res, next) => {
   try {
     const vendors = await prisma.vendor.findMany({ orderBy: { name: 'asc' } });
     return successResponse(res, vendors, 'Vendors retrieved');
@@ -11,7 +11,7 @@ const getVendors = async (req, res, next) => {
   }
 };
 
-const getVendorById = async (req, res, next) => {
+export const getVendorById = async (req, res, next) => {
   try {
     const vendor = await prisma.vendor.findUnique({
       where: { id: parseInt(req.params.id, 10) },
@@ -28,7 +28,7 @@ const getVendorById = async (req, res, next) => {
   }
 };
 
-const createVendor = async (req, res, next) => {
+export const createVendor = async (req, res, next) => {
   try {
     const vendor = await prisma.vendor.create({ data: req.body });
 
@@ -40,7 +40,7 @@ const createVendor = async (req, res, next) => {
   }
 };
 
-const updateVendor = async (req, res, next) => {
+export const updateVendor = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldVendor = await prisma.vendor.findUnique({ where: { id } });
@@ -58,7 +58,7 @@ const updateVendor = async (req, res, next) => {
   }
 };
 
-const deleteVendor = async (req, res, next) => {
+export const deleteVendor = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldVendor = await prisma.vendor.findUnique({ where: { id } });
@@ -74,12 +74,4 @@ const deleteVendor = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getVendors,
-  getVendorById,
-  createVendor,
-  updateVendor,
-  deleteVendor,
 };

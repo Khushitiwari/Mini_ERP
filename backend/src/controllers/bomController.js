@@ -1,8 +1,8 @@
-const prisma = require('../config/db');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const getBomByProductId = async (req, res, next) => {
+export const getBomByProductId = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);
     const bom = await prisma.boM.findUnique({
@@ -24,7 +24,7 @@ const getBomByProductId = async (req, res, next) => {
   }
 };
 
-const createBom = async (req, res, next) => {
+export const createBom = async (req, res, next) => {
   try {
     const { finishedProductId, components, operations = [] } = req.body;
 
@@ -70,7 +70,7 @@ const createBom = async (req, res, next) => {
   }
 };
 
-const updateBom = async (req, res, next) => {
+export const updateBom = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldBom = await prisma.boM.findUnique({
@@ -123,5 +123,3 @@ const updateBom = async (req, res, next) => {
     next(err);
   }
 };
-
-module.exports = { getBomByProductId, createBom, updateBom };

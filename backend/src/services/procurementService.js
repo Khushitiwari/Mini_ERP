@@ -1,4 +1,4 @@
-const prisma = require('../config/db');
+import prisma from '../config/db.js';
 
 const triggerProcurement = async (productId, shortageQty, userId) => {
   const product = await prisma.product.findUnique({
@@ -17,9 +17,9 @@ const triggerProcurement = async (productId, shortageQty, userId) => {
     );
   }
 
-  // Lazy requires to avoid circular dependencies
-  const purchaseService = require('./purchaseService');
-  const manufacturingService = require('./manufacturingService');
+  // Dynamic imports to avoid circular dependencies
+  const purchaseService = await import('./purchaseService.js');
+  const manufacturingService = await import('./manufacturingService.js');
 
   if (product.procurementType === 'PURCHASE') {
     if (!product.defaultVendorId) {
@@ -44,4 +44,4 @@ const triggerProcurement = async (productId, shortageQty, userId) => {
   throw Object.assign(new Error('Unknown procurement type'), { statusCode: 400 });
 };
 
-module.exports = { triggerProcurement };
+export { triggerProcurement };

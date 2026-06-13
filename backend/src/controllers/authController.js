@@ -1,11 +1,11 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const prisma = require('../config/db');
-const env = require('../config/env');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import prisma from '../config/db.js';
+import env from '../config/env.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const register = async (req, res, next) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password, role, address, mobile, photo } = req.body;
 
@@ -37,7 +37,7 @@ const register = async (req, res, next) => {
   }
 };
 
-const login = async (req, res, next) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -70,12 +70,10 @@ const login = async (req, res, next) => {
   }
 };
 
-const me = async (req, res, next) => {
+export const me = async (req, res, next) => {
   try {
     return successResponse(res, req.user, 'User profile retrieved');
   } catch (err) {
     next(err);
   }
 };
-
-module.exports = { register, login, me };

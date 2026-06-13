@@ -1,8 +1,8 @@
-const prisma = require('../config/db');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const getCustomers = async (req, res, next) => {
+export const getCustomers = async (req, res, next) => {
   try {
     const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' } });
     return successResponse(res, customers, 'Customers retrieved');
@@ -11,7 +11,7 @@ const getCustomers = async (req, res, next) => {
   }
 };
 
-const getCustomerById = async (req, res, next) => {
+export const getCustomerById = async (req, res, next) => {
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: parseInt(req.params.id, 10) },
@@ -28,7 +28,7 @@ const getCustomerById = async (req, res, next) => {
   }
 };
 
-const createCustomer = async (req, res, next) => {
+export const createCustomer = async (req, res, next) => {
   try {
     const customer = await prisma.customer.create({ data: req.body });
 
@@ -40,7 +40,7 @@ const createCustomer = async (req, res, next) => {
   }
 };
 
-const updateCustomer = async (req, res, next) => {
+export const updateCustomer = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldCustomer = await prisma.customer.findUnique({ where: { id } });
@@ -58,7 +58,7 @@ const updateCustomer = async (req, res, next) => {
   }
 };
 
-const deleteCustomer = async (req, res, next) => {
+export const deleteCustomer = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const oldCustomer = await prisma.customer.findUnique({ where: { id } });
@@ -74,12 +74,4 @@ const deleteCustomer = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getCustomers,
-  getCustomerById,
-  createCustomer,
-  updateCustomer,
-  deleteCustomer,
 };

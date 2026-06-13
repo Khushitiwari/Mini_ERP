@@ -1,9 +1,9 @@
-const express = require('express');
-const salesOrderController = require('../controllers/salesOrderController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { allowRoles } = require('../middleware/roleMiddleware');
-const { validate, salesOrderSchema } = require('../utils/validators');
-const { ROLES, ROLE_GROUPS } = require('../utils/constants');
+import express from 'express';
+import * as salesOrderController from '../controllers/salesOrderController.js';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { allowRoles } from '../middleware/roleMiddleware.js';
+import { validate, salesOrderSchema } from '../utils/validators.js';
+import { ROLES, ROLE_GROUPS } from '../utils/constants.js';
 
 const router = express.Router();
 const fullAccess = [...ROLE_GROUPS.SALES_FULL];
@@ -24,4 +24,4 @@ router.put('/:id/confirm', allowRoles(...fullAccess), salesOrderController.confi
 router.put('/:id/deliver', allowRoles(...fullAccess), salesOrderController.deliverSalesOrder);
 router.put('/:id/cancel', allowRoles(...fullAccess), salesOrderController.cancelSalesOrder);
 
-module.exports = router;
+export default router;

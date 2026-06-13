@@ -1,5 +1,5 @@
-const prisma = require('../config/db');
-const stockService = require('./stockService');
+import prisma from '../config/db.js';
+import * as stockService from './stockService.js';
 
 const createSalesOrder = async (customerId, items, userId) => {
   const customer = await prisma.customer.findUnique({ where: { id: customerId } });
@@ -40,8 +40,8 @@ const confirmSalesOrder = async (orderId) => {
     throw Object.assign(new Error('Only DRAFT sales orders can be confirmed'), { statusCode: 400 });
   }
 
-  // Lazy require to avoid circular dependency
-  const procurementService = require('./procurementService');
+  // Dynamic import to avoid circular dependency
+  const procurementService = await import('./procurementService.js');
 
   for (const item of order.items) {
     const freeQty = await stockService.getFreeToUseQty(item.productId);
@@ -164,7 +164,7 @@ const cancelSalesOrder = async (orderId) => {
   });
 };
 
-module.exports = {
+export {
   createSalesOrder,
   confirmSalesOrder,
   deliverSalesOrder,

@@ -1,9 +1,9 @@
-const prisma = require('../config/db');
-const manufacturingService = require('../services/manufacturingService');
-const { successResponse } = require('../utils/apiResponse');
-const { logAudit } = require('../middleware/auditLogger');
+import prisma from '../config/db.js';
+import * as manufacturingService from '../services/manufacturingService.js';
+import { successResponse } from '../utils/apiResponse.js';
+import { logAudit } from '../middleware/auditLogger.js';
 
-const getManufacturingOrders = async (req, res, next) => {
+export const getManufacturingOrders = async (req, res, next) => {
   try {
     const { status } = req.query;
     const where = {};
@@ -26,7 +26,7 @@ const getManufacturingOrders = async (req, res, next) => {
   }
 };
 
-const getManufacturingOrderById = async (req, res, next) => {
+export const getManufacturingOrderById = async (req, res, next) => {
   try {
     const order = await prisma.manufacturingOrder.findUnique({
       where: { id: parseInt(req.params.id, 10) },
@@ -48,7 +48,7 @@ const getManufacturingOrderById = async (req, res, next) => {
   }
 };
 
-const createManufacturingOrder = async (req, res, next) => {
+export const createManufacturingOrder = async (req, res, next) => {
   try {
     const { productId, quantity, assignedTo } = req.body;
     const order = await manufacturingService.createManufacturingOrder(
@@ -65,7 +65,7 @@ const createManufacturingOrder = async (req, res, next) => {
   }
 };
 
-const startManufacturingOrder = async (req, res, next) => {
+export const startManufacturingOrder = async (req, res, next) => {
   try {
     const moId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.manufacturingOrder.findUnique({ where: { id: moId } });
@@ -79,7 +79,7 @@ const startManufacturingOrder = async (req, res, next) => {
   }
 };
 
-const completeWorkOrder = async (req, res, next) => {
+export const completeWorkOrder = async (req, res, next) => {
   try {
     const moId = parseInt(req.params.id, 10);
     const woId = parseInt(req.params.woId, 10);
@@ -96,7 +96,7 @@ const completeWorkOrder = async (req, res, next) => {
   }
 };
 
-const completeManufacturingOrder = async (req, res, next) => {
+export const completeManufacturingOrder = async (req, res, next) => {
   try {
     const moId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.manufacturingOrder.findUnique({ where: { id: moId } });
@@ -110,7 +110,7 @@ const completeManufacturingOrder = async (req, res, next) => {
   }
 };
 
-const cancelManufacturingOrder = async (req, res, next) => {
+export const cancelManufacturingOrder = async (req, res, next) => {
   try {
     const moId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.manufacturingOrder.findUnique({ where: { id: moId } });
@@ -122,14 +122,4 @@ const cancelManufacturingOrder = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getManufacturingOrders,
-  getManufacturingOrderById,
-  createManufacturingOrder,
-  startManufacturingOrder,
-  completeWorkOrder,
-  completeManufacturingOrder,
-  cancelManufacturingOrder,
 };

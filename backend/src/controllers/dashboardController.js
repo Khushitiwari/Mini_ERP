@@ -1,7 +1,7 @@
-const prisma = require('../config/db');
-const { successResponse } = require('../utils/apiResponse');
+import prisma from '../config/db.js';
+import { successResponse } from '../utils/apiResponse.js';
 
-const getDashboardSummary = async (req, res, next) => {
+export const getDashboardSummary = async (req, res, next) => {
   try {
     const [
       totalSalesOrders,
@@ -40,5 +40,3 @@ const getDashboardSummary = async (req, res, next) => {
     next(err);
   }
 };
-
-module.exports = { getDashboardSummary };

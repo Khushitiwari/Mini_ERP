@@ -1,7 +1,7 @@
-const stockService = require('../services/stockService');
-const { successResponse } = require('../utils/apiResponse');
+import * as stockService from '../services/stockService.js';
+import { successResponse } from '../utils/apiResponse.js';
 
-const getAllStock = async (req, res, next) => {
+export const getAllStock = async (req, res, next) => {
   try {
     const stock = await stockService.getAllStockSummary();
     return successResponse(res, stock, 'Stock summary retrieved');
@@ -10,7 +10,7 @@ const getAllStock = async (req, res, next) => {
   }
 };
 
-const getStockByProductId = async (req, res, next) => {
+export const getStockByProductId = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);
     const stock = await stockService.getStockSummary(productId);
@@ -20,7 +20,7 @@ const getStockByProductId = async (req, res, next) => {
   }
 };
 
-const getStockLedger = async (req, res, next) => {
+export const getStockLedger = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);
     const ledger = await stockService.getStockLedger(productId);
@@ -30,7 +30,7 @@ const getStockLedger = async (req, res, next) => {
   }
 };
 
-const adjustStock = async (req, res, next) => {
+export const adjustStock = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);
     const { changeQty, reason = 'MANUAL_ADJUSTMENT' } = req.body;
@@ -48,11 +48,4 @@ const adjustStock = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
-
-module.exports = {
-  getAllStock,
-  getStockByProductId,
-  getStockLedger,
-  adjustStock,
 };
