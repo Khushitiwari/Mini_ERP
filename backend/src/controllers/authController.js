@@ -1,0 +1,75 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const prisma = require('../config/db');
+const env = require('../config/env');
+const { successResponse } = require('../utils/apiResponse');
+const { createAuditLog } = require('../middleware/auditLogger');
+
+const register = async (req, res, next) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return next(Object.assign(new Error('Email already registered'), { statusCode: 400 }));
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { name, email, password: hashedPassword, role },
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
+    });
+
+    await createAuditLog({
+      userId: req.user.id,
+      action: 'CREATE',
+      entityType: 'User',
+      entityId: user.id,
+      newValue: user,
+    });
+
+    return successResponse(res, user, 'User registered successfully', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return next(Object.assign(new Error('Invalid email or password'), { statusCode: 401 }));
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return next(Object.assign(new Error('Invalid email or password'), { statusCode: 401 }));
+    }
+
+    const token = jwt.sign({ userId: user.id, role: user.role }, env.jwtSecret, { expiresIn: '24h' });
+
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    };
+
+    return successResponse(res, { user: userData, token }, 'Login successful');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const me = async (req, res, next) => {
+  try {
+    return successResponse(res, req.user, 'User profile retrieved');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, me };

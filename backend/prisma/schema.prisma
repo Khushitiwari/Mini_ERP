@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SALES
+  PURCHASE
+  MANUFACTURING
+  INVENTORY_MANAGER
+  OWNER
+}
+
+enum ProductType {
+  RAW_MATERIAL
+  FINISHED_GOOD
+}
+
+enum ProcurementStrategy {
+  MTS
+  MTO
+}
+
+enum ProcurementType {
+  PURCHASE
+  MANUFACTURING
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_DELIVERED
+  FULLY_DELIVERED
+  CANCELLED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  CONFIRMED
+  PARTIALLY_RECEIVED
+  FULLY_RECEIVED
+  CANCELLED
+}
+
+enum ManufacturingOrderStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrderStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+enum StockReason {
+  SALE_DELIVERY
+  PURCHASE_RECEIPT
+  MFG_CONSUMPTION
+  MFG_PRODUCTION
+  MANUAL_ADJUSTMENT
+}
+
+enum ReferenceType {
+  SALES_ORDER
+  PURCHASE_ORDER
+  MANUFACTURING_ORDER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  createdAt DateTime @default(now())
+
+  salesOrdersCreated     SalesOrder[]         @relation("SalesOrderCreatedBy")
+  purchaseOrdersCreated  PurchaseOrder[]      @relation("PurchaseOrderCreatedBy")
+  manufacturingAssigned  ManufacturingOrder[] @relation("ManufacturingAssignedTo")
+  auditLogs              AuditLog[]
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  salesOrders SalesOrder[]
+}
+
+model Vendor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  products        Product[]       @relation("DefaultVendor")
+  purchaseOrders  PurchaseOrder[]
+}
+
+model Product {
+  id                  Int                  @id @default(autoincrement())
+  name                String
+  sku                 String               @unique
+  type                ProductType
+  salesPrice          Float                @default(0)
+  costPrice           Float                @default(0)
+  onHandQty           Int                  @default(0)
+  reservedQty         Int                  @default(0)
+  procurementStrategy ProcurementStrategy  @default(MTS)
+  procureOnDemand     Boolean              @default(false)
+  procurementType     ProcurementType?
+  defaultVendorId     Int?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  defaultVendor          Vendor?              @relation("DefaultVendor", fields: [defaultVendorId], references: [id])
+  bomAsFinished          BoM?                 @relation("FinishedProduct")
+  bomComponents          BoMComponent[]       @relation("ComponentProduct")
+  salesOrderItems        SalesOrderItem[]
+  purchaseOrderItems     PurchaseOrderItem[]
+  manufacturingOrders    ManufacturingOrder[]
+  stockLedger            StockLedger[]
+}
+
+model BoM {
+  id                Int      @id @default(autoincrement())
+  finishedProductId Int      @unique
+  createdAt         DateTime @default(now())
+
+  finishedProduct      Product              @relation("FinishedProduct", fields: [finishedProductId], references: [id])
+  components           BoMComponent[]
+  operations           BoMOperation[]
+  manufacturingOrders  ManufacturingOrder[]
+}
+
+model BoMComponent {
+  id                 Int   @id @default(autoincrement())
+  bomId              Int
+  componentProductId Int
+  quantityRequired   Float
+
+  bom              BoM     @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  componentProduct Product @relation("ComponentProduct", fields: [componentProductId], references: [id])
+}
+
+model BoMOperation {
+  id              Int    @id @default(autoincrement())
+  bomId           Int
+  operationName   String
+  durationMinutes Int
+  workCenter      String
+
+  bom BoM @relation(fields: [bomId], references: [id], onDelete: Cascade)
+}
+
+model SalesOrder {
+  id         Int              @id @default(autoincrement())
+  customerId Int
+  status     SalesOrderStatus @default(DRAFT)
+  orderDate  DateTime         @default(now())
+  createdBy  Int
+
+  customer Customer         @relation(fields: [customerId], references: [id])
+  creator  User             @relation("SalesOrderCreatedBy", fields: [createdBy], references: [id])
+  items    SalesOrderItem[]
+}
+
+model SalesOrderItem {
+  id            Int @id @default(autoincrement())
+  salesOrderId  Int
+  productId     Int
+  quantity      Int
+  deliveredQty  Int @default(0)
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id])
+}
+
+model PurchaseOrder {
+  id            Int                 @id @default(autoincrement())
+  vendorId      Int
+  status        PurchaseOrderStatus @default(DRAFT)
+  orderDate     DateTime            @default(now())
+  createdBy     Int
+  autoGenerated Boolean             @default(false)
+
+  vendor  Vendor              @relation(fields: [vendorId], references: [id])
+  creator User                @relation("PurchaseOrderCreatedBy", fields: [createdBy], references: [id])
+  items   PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              Int @id @default(autoincrement())
+  purchaseOrderId Int
+  productId       Int
+  quantity        Int
+  receivedQty     Int @default(0)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+}
+
+model ManufacturingOrder {
+  id            Int                      @id @default(autoincrement())
+  productId     Int
+  quantity      Int
+  status        ManufacturingOrderStatus @default(DRAFT)
+  bomId         Int
+  assignedTo    Int?
+  autoGenerated Boolean                  @default(false)
+  createdAt     DateTime                 @default(now())
+
+  product    Product     @relation(fields: [productId], references: [id])
+  bom        BoM         @relation(fields: [bomId], references: [id])
+  assigned   User?       @relation("ManufacturingAssignedTo", fields: [assignedTo], references: [id])
+  workOrders WorkOrder[]
+}
+
+model WorkOrder {
+  id                   Int             @id @default(autoincrement())
+  manufacturingOrderId Int
+  operationName        String
+  workCenter           String
+  durationMinutes      Int
+  status               WorkOrderStatus @default(PENDING)
+
+  manufacturingOrder ManufacturingOrder @relation(fields: [manufacturingOrderId], references: [id], onDelete: Cascade)
+}
+
+model StockLedger {
+  id            Int            @id @default(autoincrement())
+  productId     Int
+  changeQty     Int
+  reason        StockReason
+  referenceId   Int?
+  referenceType ReferenceType?
+  timestamp     DateTime       @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  action     String
+  entityType String
+  entityId   Int
+  oldValue   Json?
+  newValue   Json?
+  timestamp  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
