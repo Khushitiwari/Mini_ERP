@@ -38,6 +38,11 @@ async function main() {
   }
 
   console.log('Created 6 users');
+  console.log('\n=== Demo Login Credentials (password: password123) ===');
+  for (const u of users) {
+    console.log(`  ${u.email} / ${u.role}`);
+  }
+  console.log('');
 
   const vendor1 = await prisma.vendor.create({
     data: {

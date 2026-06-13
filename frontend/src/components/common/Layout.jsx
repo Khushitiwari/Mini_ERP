@@ -1,9 +1,9 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useERP } from '../../context/ERPContext';
+import { useAuth } from '../../context/AuthContext';
 import { MENU_ITEMS, ROLE_MENU } from '../../utils/helpers';
 
 export default function Layout() {
-  const { user, logout } = useERP();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const allowedKeys = ROLE_MENU[user?.role] ?? [];
 

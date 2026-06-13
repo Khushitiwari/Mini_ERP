@@ -1,10 +1,19 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useERP } from '../context/ERPContext';
 import { usePolling } from '../hooks/usePolling';
 
 export default function Dashboard() {
   const { data, refreshDashboard } = useERP();
+  const location = useLocation();
   const summary = data.dashboard ?? {};
+  const accessDenied = location.state?.accessDenied;
+
+  useEffect(() => {
+    if (accessDenied) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [accessDenied]);
 
   const poll = useCallback(async () => {
     try {
@@ -31,6 +40,9 @@ export default function Dashboard() {
         <h2>Dashboard</h2>
         <p className="page-subtitle">Overview of operations (updates every 4s)</p>
       </div>
+      {accessDenied && (
+        <div className="alert alert-warning">Access denied — you do not have permission to view that page.</div>
+      )}
       <div className="dashboard-grid">
         {cards.map((card) => (
           <div key={card.label} className="stat-card">

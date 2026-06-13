@@ -1,50 +1,35 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useERP } from '../context/ERPContext';
-import { showError } from '../utils/helpers';
+import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import * as authApi from '../api/authApi';
+import { useAuth } from '../context/AuthContext';
+import { DEMO_ACCOUNTS } from '../utils/helpers';
 
 export default function Login() {
-  const { login, user, restoreSession } = useERP();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@shiv.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    restoreSession()
-      .then((ok) => {
-        if (ok) navigate('/');
-      })
-      .finally(() => setChecking(false));
-  }, [restoreSession, navigate]);
-
-  useEffect(() => {
-    if (user) navigate('/');
-  }, [user, navigate]);
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setSubmitting(true);
     try {
-      await login(email, password);
+      const { token, user } = await authApi.login(email, password);
+      login(token, user);
       navigate('/');
-    } catch (err) {
-      showError(err, 'Login failed');
+    } catch {
+      setError('Invalid email or password');
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (checking) {
-    return (
-      <div className="login-page">
-        <div className="login-card">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="login-page">
@@ -74,12 +59,18 @@ export default function Login() {
               required
             />
           </div>
+          {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Signing in...' : 'Sign In'}
+            {submitting ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <div className="login-hints">
-          <p>Demo: admin@shiv.com / password123</p>
+          <p><strong>Demo Accounts</strong> (password: password123)</p>
+          {DEMO_ACCOUNTS.map((account) => (
+            <p key={account.email}>
+              {account.email} — {account.role}
+            </p>
+          ))}
         </div>
       </div>
     </div>

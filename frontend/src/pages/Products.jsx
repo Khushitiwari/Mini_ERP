@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useERP } from '../context/ERPContext';
+import { useAuth } from '../context/AuthContext';
 import * as productApi from '../api/productApi';
 import { mapProductFromApi, mapProductToApi } from '../api/mappers';
 import { usePolling } from '../hooks/usePolling';
@@ -20,7 +21,8 @@ const emptyProduct = {
 };
 
 export default function Products() {
-  const { data, updateData, addAuditLog, syncStockFromBackend, user } = useERP();
+  const { data, updateData, addAuditLog, syncStockFromBackend } = useERP();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...emptyProduct });

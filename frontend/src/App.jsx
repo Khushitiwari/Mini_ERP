@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { useERP } from './context/ERPContext';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Layout from './components/common/Layout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/Login';
@@ -11,23 +10,25 @@ import Manufacturing from './pages/Manufacturing';
 import BoM from './pages/BoM';
 import Inventory from './pages/Inventory';
 import Products from './pages/Products';
-import Customers from './pages/Customers';
-import Vendors from './pages/Vendors';
 import AuditLogs from './pages/AuditLogs';
+import UserManagement from './pages/UserManagement';
 
-function AppRoutes() {
-  const { user, restoreSession } = useERP();
-  const navigate = useNavigate();
+export default function App() {
+  const { isAuthenticated, initializing } = useAuth();
 
-  useEffect(() => {
-    if (localStorage.getItem('token') && !user) {
-      restoreSession().catch(() => navigate('/login'));
-    }
-  }, [user, restoreSession, navigate]);
+  if (initializing) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route
         element={
           <ProtectedRoute>
@@ -42,15 +43,17 @@ function AppRoutes() {
         <Route path="bom" element={<ProtectedRoute menuKey="bom"><BoM /></ProtectedRoute>} />
         <Route path="inventory" element={<ProtectedRoute menuKey="inventory"><Inventory /></ProtectedRoute>} />
         <Route path="products" element={<ProtectedRoute menuKey="products"><Products /></ProtectedRoute>} />
-        <Route path="customers" element={<ProtectedRoute menuKey="customers"><Customers /></ProtectedRoute>} />
-        <Route path="vendors" element={<ProtectedRoute menuKey="vendors"><Vendors /></ProtectedRoute>} />
         <Route path="audit" element={<ProtectedRoute menuKey="audit"><AuditLogs /></ProtectedRoute>} />
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute menuKey="users" allowedRoles={['ADMIN']}>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
-}
-
-export default function App() {
-  return <AppRoutes />;
 }

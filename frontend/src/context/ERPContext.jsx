@@ -1,5 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import * as authApi from '../api/authApi';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as productApi from '../api/productApi';
 import * as customerApi from '../api/customerApi';
 import * as vendorApi from '../api/vendorApi';
@@ -17,6 +16,7 @@ import {
   mapAuditLogFromApi,
 } from '../api/mappers';
 import { showError } from '../utils/helpers';
+import { useAuth } from './AuthContext';
 
 const EMPTY_DATA = {
   products: [],
@@ -34,10 +34,7 @@ const EMPTY_DATA = {
 const ERPContext = createContext(null);
 
 export const ERPProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const { isAuthenticated } = useAuth();
   const [data, setData] = useState(EMPTY_DATA);
   const [loading, setLoading] = useState(false);
 
@@ -147,51 +144,21 @@ export const ERPProvider = ({ children }) => {
     }
   }, []);
 
-  const login = useCallback(
-    async (email, password) => {
-      const { user: loggedInUser, token } = await authApi.login(email, password);
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(loggedInUser));
-      setUser(loggedInUser);
-      await loadInitialData();
-      return loggedInUser;
-    },
-    [loadInitialData]
-  );
-
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setData(EMPTY_DATA);
-  }, []);
-
-  const restoreSession = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
-    try {
-      const me = await authApi.getMe();
-      setUser(me);
-      localStorage.setItem('user', JSON.stringify(me));
-      await loadInitialData();
-      return true;
-    } catch {
-      logout();
-      return false;
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadInitialData().catch(() => {});
+    } else {
+      setData(EMPTY_DATA);
     }
-  }, [loadInitialData, logout]);
+  }, [isAuthenticated, loadInitialData]);
 
   const value = useMemo(
     () => ({
-      user,
       data,
       loading,
       updateData,
       addAuditLog,
-      login,
-      logout,
       loadInitialData,
-      restoreSession,
       refreshProducts,
       refreshStockLedger,
       syncStockFromBackend,
@@ -199,15 +166,11 @@ export const ERPProvider = ({ children }) => {
       refreshAuditLogs,
     }),
     [
-      user,
       data,
       loading,
       updateData,
       addAuditLog,
-      login,
-      logout,
       loadInitialData,
-      restoreSession,
       refreshProducts,
       refreshStockLedger,
       syncStockFromBackend,
