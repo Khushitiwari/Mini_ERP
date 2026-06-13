@@ -25,6 +25,9 @@ const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
     role: z.enum(['ADMIN', 'SALES', 'PURCHASE', 'MANUFACTURING', 'INVENTORY_MANAGER', 'OWNER']),
+    address: z.string().optional(),
+    mobile: z.string().optional(),
+    photo: z.string().optional(),
   }),
 });
 

@@ -1,15 +1,24 @@
 const prisma = require('../config/db');
+const { logAudit } = require('../middleware/auditLogger');
 
 /**
  * Central stock module — the ONLY place that changes onHandQty.
  */
-const updateStock = async (productId, changeQty, reason, referenceId = null, referenceType = null) => {
+const updateStock = async (
+  productId,
+  changeQty,
+  reason,
+  referenceId = null,
+  referenceType = null,
+  userId = null
+) => {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) {
     throw Object.assign(new Error('Product not found'), { statusCode: 404 });
   }
 
-  const newOnHandQty = product.onHandQty + changeQty;
+  const previousQty = product.onHandQty;
+  const newOnHandQty = previousQty + changeQty;
   if (newOnHandQty < 0) {
     throw Object.assign(new Error(`Insufficient stock for product ${product.name}`), { statusCode: 400 });
   }
@@ -29,6 +38,17 @@ const updateStock = async (productId, changeQty, reason, referenceId = null, ref
       },
     }),
   ]);
+
+  if (userId) {
+    await logAudit(
+      userId,
+      'STOCK_UPDATE',
+      'Product',
+      productId,
+      { onHandQty: previousQty },
+      { onHandQty: newOnHandQty, changeQty, reason }
+    );
+  }
 
   return { product: updatedProduct, ledgerEntry };
 };

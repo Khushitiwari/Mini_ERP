@@ -1,7 +1,7 @@
 const prisma = require('../config/db');
 const purchaseService = require('../services/purchaseService');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const getPurchaseOrders = async (req, res, next) => {
   try {
@@ -52,13 +52,7 @@ const createPurchaseOrder = async (req, res, next) => {
     const { vendorId, items } = req.body;
     const order = await purchaseService.createPurchaseOrder(vendorId, items, req.user.id);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'PurchaseOrder',
-      entityId: order.id,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'CREATE_PURCHASE_ORDER', 'PurchaseOrder', order.id, null, order);
 
     return successResponse(res, order, 'Purchase order created', 201);
   } catch (err) {
@@ -72,14 +66,7 @@ const confirmPurchaseOrder = async (req, res, next) => {
     const oldOrder = await prisma.purchaseOrder.findUnique({ where: { id: orderId } });
     const order = await purchaseService.confirmPurchaseOrder(orderId);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CONFIRM',
-      entityType: 'PurchaseOrder',
-      entityId: order.id,
-      oldValue: oldOrder,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'CONFIRM_PURCHASE_ORDER', 'PurchaseOrder', order.id, oldOrder, order);
 
     return successResponse(res, order, 'Purchase order confirmed');
   } catch (err) {
@@ -92,16 +79,9 @@ const receivePurchaseOrder = async (req, res, next) => {
     const orderId = parseInt(req.params.id, 10);
     const { items } = req.body;
     const oldOrder = await prisma.purchaseOrder.findUnique({ where: { id: orderId } });
-    const order = await purchaseService.receivePurchaseOrder(orderId, items);
+    const order = await purchaseService.receivePurchaseOrder(orderId, items, req.user.id);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'RECEIVE',
-      entityType: 'PurchaseOrder',
-      entityId: order.id,
-      oldValue: oldOrder,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'RECEIVE_PURCHASE_ORDER', 'PurchaseOrder', order.id, oldOrder, order);
 
     return successResponse(res, order, 'Purchase order receipt recorded');
   } catch (err) {
@@ -115,14 +95,7 @@ const cancelPurchaseOrder = async (req, res, next) => {
     const oldOrder = await prisma.purchaseOrder.findUnique({ where: { id: orderId } });
     const order = await purchaseService.cancelPurchaseOrder(orderId);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CANCEL',
-      entityType: 'PurchaseOrder',
-      entityId: order.id,
-      oldValue: oldOrder,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'CANCEL_PURCHASE_ORDER', 'PurchaseOrder', order.id, oldOrder, order);
 
     return successResponse(res, order, 'Purchase order cancelled');
   } catch (err) {

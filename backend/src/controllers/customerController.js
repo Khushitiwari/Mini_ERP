@@ -1,6 +1,6 @@
 const prisma = require('../config/db');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const getCustomers = async (req, res, next) => {
   try {
@@ -32,13 +32,7 @@ const createCustomer = async (req, res, next) => {
   try {
     const customer = await prisma.customer.create({ data: req.body });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'Customer',
-      entityId: customer.id,
-      newValue: customer,
-    });
+    await logAudit(req.user.id, 'CREATE', 'Customer', customer.id, null, customer);
 
     return successResponse(res, customer, 'Customer created', 201);
   } catch (err) {
@@ -56,14 +50,7 @@ const updateCustomer = async (req, res, next) => {
 
     const customer = await prisma.customer.update({ where: { id }, data: req.body });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'UPDATE',
-      entityType: 'Customer',
-      entityId: customer.id,
-      oldValue: oldCustomer,
-      newValue: customer,
-    });
+    await logAudit(req.user.id, 'UPDATE', 'Customer', customer.id, oldCustomer, customer);
 
     return successResponse(res, customer, 'Customer updated');
   } catch (err) {
@@ -81,13 +68,7 @@ const deleteCustomer = async (req, res, next) => {
 
     await prisma.customer.delete({ where: { id } });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'DELETE',
-      entityType: 'Customer',
-      entityId: id,
-      oldValue: oldCustomer,
-    });
+    await logAudit(req.user.id, 'DELETE', 'Customer', id, oldCustomer, null);
 
     return successResponse(res, null, 'Customer deleted');
   } catch (err) {

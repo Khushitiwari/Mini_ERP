@@ -70,7 +70,7 @@ const confirmSalesOrder = async (orderId) => {
   });
 };
 
-const deliverSalesOrder = async (orderId, deliveredItems) => {
+const deliverSalesOrder = async (orderId, deliveredItems, userId) => {
   const order = await prisma.salesOrder.findUnique({
     where: { id: orderId },
     include: { items: true },
@@ -97,7 +97,14 @@ const deliverSalesOrder = async (orderId, deliveredItems) => {
       });
     }
 
-    await stockService.updateStock(item.productId, -qtyToDeliver, 'SALE_DELIVERY', orderId, 'SALES_ORDER');
+    await stockService.updateStock(
+      item.productId,
+      -qtyToDeliver,
+      'SALE_DELIVERY',
+      orderId,
+      'SALES_ORDER',
+      userId
+    );
     await stockService.releaseReservedStock(item.productId, qtyToDeliver);
 
     await prisma.salesOrderItem.update({

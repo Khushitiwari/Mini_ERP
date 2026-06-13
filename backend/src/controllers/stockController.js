@@ -1,6 +1,5 @@
 const stockService = require('../services/stockService');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
 
 const getAllStock = async (req, res, next) => {
   try {
@@ -36,15 +35,14 @@ const adjustStock = async (req, res, next) => {
     const productId = parseInt(req.params.productId, 10);
     const { changeQty, reason = 'MANUAL_ADJUSTMENT' } = req.body;
 
-    const result = await stockService.updateStock(productId, changeQty, reason, null, null);
-
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'ADJUST_STOCK',
-      entityType: 'Product',
-      entityId: productId,
-      newValue: result,
-    });
+    const result = await stockService.updateStock(
+      productId,
+      changeQty,
+      reason,
+      null,
+      null,
+      req.user.id
+    );
 
     return successResponse(res, result, 'Stock adjusted');
   } catch (err) {

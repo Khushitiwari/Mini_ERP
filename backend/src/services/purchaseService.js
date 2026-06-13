@@ -52,7 +52,7 @@ const confirmPurchaseOrder = async (orderId) => {
   });
 };
 
-const receivePurchaseOrder = async (orderId, receivedItems) => {
+const receivePurchaseOrder = async (orderId, receivedItems, userId) => {
   const order = await prisma.purchaseOrder.findUnique({
     where: { id: orderId },
     include: { items: true },
@@ -79,7 +79,14 @@ const receivePurchaseOrder = async (orderId, receivedItems) => {
       });
     }
 
-    await stockService.updateStock(item.productId, qtyToReceive, 'PURCHASE_RECEIPT', orderId, 'PURCHASE_ORDER');
+    await stockService.updateStock(
+      item.productId,
+      qtyToReceive,
+      'PURCHASE_RECEIPT',
+      orderId,
+      'PURCHASE_ORDER',
+      userId
+    );
 
     await prisma.purchaseOrderItem.update({
       where: { id: item.id },

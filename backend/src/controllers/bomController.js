@@ -1,6 +1,6 @@
 const prisma = require('../config/db');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const getBomByProductId = async (req, res, next) => {
   try {
@@ -62,13 +62,7 @@ const createBom = async (req, res, next) => {
       },
     });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'BoM',
-      entityId: bom.id,
-      newValue: bom,
-    });
+    await logAudit(req.user.id, 'CREATE_BOM', 'BoM', bom.id, null, bom);
 
     return successResponse(res, bom, 'BoM created', 201);
   } catch (err) {
@@ -122,14 +116,7 @@ const updateBom = async (req, res, next) => {
       },
     });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'UPDATE',
-      entityType: 'BoM',
-      entityId: bom.id,
-      oldValue: oldBom,
-      newValue: bom,
-    });
+    await logAudit(req.user.id, 'UPDATE_BOM', 'BoM', bom.id, oldBom, bom);
 
     return successResponse(res, bom, 'BoM updated');
   } catch (err) {

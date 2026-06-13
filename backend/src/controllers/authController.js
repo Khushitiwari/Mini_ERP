@@ -3,11 +3,11 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
 const env = require('../config/env');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, address, mobile, photo } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -16,17 +16,20 @@ const register = async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      data: { name, email, password: hashedPassword, role, address, mobile, photo },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        address: true,
+        mobile: true,
+        photo: true,
+        createdAt: true,
+      },
     });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'User',
-      entityId: user.id,
-      newValue: user,
-    });
+    await logAudit(req.user.id, 'CREATE', 'User', user.id, null, user);
 
     return successResponse(res, user, 'User registered successfully', 201);
   } catch (err) {
@@ -55,6 +58,9 @@ const login = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      address: user.address,
+      mobile: user.mobile,
+      photo: user.photo,
       createdAt: user.createdAt,
     };
 

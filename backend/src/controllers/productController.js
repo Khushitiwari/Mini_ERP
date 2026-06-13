@@ -1,6 +1,6 @@
 const prisma = require('../config/db');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const getProducts = async (req, res, next) => {
   try {
@@ -51,7 +51,7 @@ const createProduct = async (req, res, next) => {
 
     if (initialQty > 0) {
       const stockService = require('../services/stockService');
-      await stockService.updateStock(product.id, initialQty, 'MANUAL_ADJUSTMENT', null, null);
+      await stockService.updateStock(product.id, initialQty, 'MANUAL_ADJUSTMENT', null, null, req.user.id);
     }
 
     const result = await prisma.product.findUnique({
@@ -59,13 +59,7 @@ const createProduct = async (req, res, next) => {
       include: { defaultVendor: true },
     });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'Product',
-      entityId: result.id,
-      newValue: result,
-    });
+    await logAudit(req.user.id, 'CREATE_PRODUCT', 'Product', result.id, null, result);
 
     return successResponse(res, result, 'Product created', 201);
   } catch (err) {
@@ -91,14 +85,7 @@ const updateProduct = async (req, res, next) => {
       include: { defaultVendor: true },
     });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'UPDATE',
-      entityType: 'Product',
-      entityId: product.id,
-      oldValue: oldProduct,
-      newValue: product,
-    });
+    await logAudit(req.user.id, 'UPDATE_PRODUCT', 'Product', product.id, oldProduct, product);
 
     return successResponse(res, product, 'Product updated');
   } catch (err) {
@@ -116,13 +103,7 @@ const deleteProduct = async (req, res, next) => {
 
     await prisma.product.delete({ where: { id } });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'DELETE',
-      entityType: 'Product',
-      entityId: id,
-      oldValue: oldProduct,
-    });
+    await logAudit(req.user.id, 'DELETE_PRODUCT', 'Product', id, oldProduct, null);
 
     return successResponse(res, null, 'Product deleted');
   } catch (err) {

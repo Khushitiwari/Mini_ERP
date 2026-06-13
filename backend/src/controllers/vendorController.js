@@ -1,6 +1,6 @@
 const prisma = require('../config/db');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const getVendors = async (req, res, next) => {
   try {
@@ -32,13 +32,7 @@ const createVendor = async (req, res, next) => {
   try {
     const vendor = await prisma.vendor.create({ data: req.body });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'Vendor',
-      entityId: vendor.id,
-      newValue: vendor,
-    });
+    await logAudit(req.user.id, 'CREATE', 'Vendor', vendor.id, null, vendor);
 
     return successResponse(res, vendor, 'Vendor created', 201);
   } catch (err) {
@@ -56,14 +50,7 @@ const updateVendor = async (req, res, next) => {
 
     const vendor = await prisma.vendor.update({ where: { id }, data: req.body });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'UPDATE',
-      entityType: 'Vendor',
-      entityId: vendor.id,
-      oldValue: oldVendor,
-      newValue: vendor,
-    });
+    await logAudit(req.user.id, 'UPDATE', 'Vendor', vendor.id, oldVendor, vendor);
 
     return successResponse(res, vendor, 'Vendor updated');
   } catch (err) {
@@ -81,13 +68,7 @@ const deleteVendor = async (req, res, next) => {
 
     await prisma.vendor.delete({ where: { id } });
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'DELETE',
-      entityType: 'Vendor',
-      entityId: id,
-      oldValue: oldVendor,
-    });
+    await logAudit(req.user.id, 'DELETE', 'Vendor', id, oldVendor, null);
 
     return successResponse(res, null, 'Vendor deleted');
   } catch (err) {

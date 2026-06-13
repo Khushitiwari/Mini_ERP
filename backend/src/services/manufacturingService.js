@@ -122,7 +122,7 @@ const completeWorkOrder = async (moId, woId) => {
   });
 };
 
-const completeManufacturingOrder = async (moId) => {
+const completeManufacturingOrder = async (moId, userId) => {
   const mo = await prisma.manufacturingOrder.findUnique({
     where: { id: moId },
     include: {
@@ -147,16 +147,56 @@ const completeManufacturingOrder = async (moId) => {
       -consumedQty,
       'MFG_CONSUMPTION',
       moId,
-      'MANUFACTURING_ORDER'
+      'MANUFACTURING_ORDER',
+      userId
     );
     await stockService.releaseReservedStock(component.componentProductId, consumedQty);
   }
 
-  await stockService.updateStock(mo.productId, mo.quantity, 'MFG_PRODUCTION', moId, 'MANUFACTURING_ORDER');
+  await stockService.updateStock(
+    mo.productId,
+    mo.quantity,
+    'MFG_PRODUCTION',
+    moId,
+    'MANUFACTURING_ORDER',
+    userId
+  );
 
   return prisma.manufacturingOrder.update({
     where: { id: moId },
     data: { status: 'COMPLETED' },
+    include: {
+      product: true,
+      bom: { include: { components: { include: { componentProduct: true } }, operations: true } },
+      workOrders: true,
+      assigned: { select: { id: true, name: true, email: true } },
+    },
+  });
+};
+
+const cancelManufacturingOrder = async (moId) => {
+  const mo = await prisma.manufacturingOrder.findUnique({
+    where: { id: moId },
+    include: { bom: { include: { components: true } } },
+  });
+
+  if (!mo) {
+    throw Object.assign(new Error('Manufacturing order not found'), { statusCode: 404 });
+  }
+  if (['COMPLETED', 'CANCELLED'].includes(mo.status)) {
+    throw Object.assign(new Error('Manufacturing order cannot be cancelled'), { statusCode: 400 });
+  }
+
+  if (mo.status === 'DRAFT') {
+    for (const component of mo.bom.components) {
+      const reserveQty = Math.ceil(component.quantityRequired * mo.quantity);
+      await stockService.releaseReservedStock(component.componentProductId, reserveQty);
+    }
+  }
+
+  return prisma.manufacturingOrder.update({
+    where: { id: moId },
+    data: { status: 'CANCELLED' },
     include: {
       product: true,
       bom: { include: { components: { include: { componentProduct: true } }, operations: true } },
@@ -171,4 +211,5 @@ module.exports = {
   startManufacturingOrder,
   completeWorkOrder,
   completeManufacturingOrder,
+  cancelManufacturingOrder,
 };

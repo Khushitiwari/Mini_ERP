@@ -1,7 +1,7 @@
 const prisma = require('../config/db');
 const manufacturingService = require('../services/manufacturingService');
 const { successResponse } = require('../utils/apiResponse');
-const { createAuditLog } = require('../middleware/auditLogger');
+const { logAudit } = require('../middleware/auditLogger');
 
 const getManufacturingOrders = async (req, res, next) => {
   try {
@@ -57,13 +57,7 @@ const createManufacturingOrder = async (req, res, next) => {
       assignedTo || req.user.id
     );
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'CREATE',
-      entityType: 'ManufacturingOrder',
-      entityId: order.id,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'CREATE_MANUFACTURING_ORDER', 'ManufacturingOrder', order.id, null, order);
 
     return successResponse(res, order, 'Manufacturing order created', 201);
   } catch (err) {
@@ -77,14 +71,7 @@ const startManufacturingOrder = async (req, res, next) => {
     const oldOrder = await prisma.manufacturingOrder.findUnique({ where: { id: moId } });
     const order = await manufacturingService.startManufacturingOrder(moId);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'START',
-      entityType: 'ManufacturingOrder',
-      entityId: order.id,
-      oldValue: oldOrder,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'START_MANUFACTURING_ORDER', 'ManufacturingOrder', order.id, oldOrder, order);
 
     return successResponse(res, order, 'Manufacturing order started');
   } catch (err) {
@@ -98,12 +85,9 @@ const completeWorkOrder = async (req, res, next) => {
     const woId = parseInt(req.params.woId, 10);
     const order = await manufacturingService.completeWorkOrder(moId, woId);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'COMPLETE_WORK_ORDER',
-      entityType: 'WorkOrder',
-      entityId: woId,
-      newValue: { manufacturingOrderId: moId, workOrderId: woId },
+    await logAudit(req.user.id, 'COMPLETE_WORK_ORDER', 'WorkOrder', woId, null, {
+      manufacturingOrderId: moId,
+      workOrderId: woId,
     });
 
     return successResponse(res, order, 'Work order completed');
@@ -116,18 +100,25 @@ const completeManufacturingOrder = async (req, res, next) => {
   try {
     const moId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.manufacturingOrder.findUnique({ where: { id: moId } });
-    const order = await manufacturingService.completeManufacturingOrder(moId);
+    const order = await manufacturingService.completeManufacturingOrder(moId, req.user.id);
 
-    await createAuditLog({
-      userId: req.user.id,
-      action: 'COMPLETE',
-      entityType: 'ManufacturingOrder',
-      entityId: order.id,
-      oldValue: oldOrder,
-      newValue: order,
-    });
+    await logAudit(req.user.id, 'COMPLETE_MANUFACTURING_ORDER', 'ManufacturingOrder', order.id, oldOrder, order);
 
     return successResponse(res, order, 'Manufacturing order completed');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cancelManufacturingOrder = async (req, res, next) => {
+  try {
+    const moId = parseInt(req.params.id, 10);
+    const oldOrder = await prisma.manufacturingOrder.findUnique({ where: { id: moId } });
+    const order = await manufacturingService.cancelManufacturingOrder(moId);
+
+    await logAudit(req.user.id, 'CANCEL_MANUFACTURING_ORDER', 'ManufacturingOrder', order.id, oldOrder, order);
+
+    return successResponse(res, order, 'Manufacturing order cancelled');
   } catch (err) {
     next(err);
   }
@@ -140,4 +131,5 @@ module.exports = {
   startManufacturingOrder,
   completeWorkOrder,
   completeManufacturingOrder,
+  cancelManufacturingOrder,
 };

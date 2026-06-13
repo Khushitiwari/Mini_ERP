@@ -4,26 +4,35 @@
   "description": "Mini ERP backend for Shiv Furniture Works",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "dev": "nodemon --exec tsx src/server.js",
+    "start": "tsx src/server.js",
     "migrate": "prisma migrate dev",
-    "seed": "node src/seed/seed.js",
-    "generate": "prisma generate"
+    "seed": "tsx src/seed/seed.js",
+    "generate": "prisma generate",
+    "postinstall": "prisma generate"
   },
-  "keywords": ["erp", "furniture", "express", "prisma"],
+  "keywords": [
+    "erp",
+    "furniture",
+    "express",
+    "prisma"
+  ],
   "author": "Shiv Furniture Works",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^6.9.0",
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "^7.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
-    "prisma": "^6.9.0"
+    "prisma": "^7.0.0",
+    "tsx": "^4.22.4"
   }
 }

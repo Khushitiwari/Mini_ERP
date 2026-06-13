@@ -23,5 +23,6 @@ router.post('/', allowRoles(...fullAccess), validate(manufacturingOrderSchema), 
 router.put('/:id/start', allowRoles(...fullAccess), manufacturingOrderController.startManufacturingOrder);
 router.put('/:id/work-orders/:woId/complete', allowRoles(...fullAccess), manufacturingOrderController.completeWorkOrder);
 router.put('/:id/complete', allowRoles(...fullAccess), manufacturingOrderController.completeManufacturingOrder);
+router.put('/:id/cancel', allowRoles(...fullAccess), manufacturingOrderController.cancelManufacturingOrder);
 
 module.exports = router;
