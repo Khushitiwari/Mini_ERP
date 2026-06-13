@@ -13,7 +13,7 @@ router.get('/me', authMiddleware, authController.getMe);
 router.post(
   '/users',
   authMiddleware,
-  allowRoles(ROLES.ADMIN),
+  allowRoles(ROLES.ADMIN), 
   validate(createUserSchema),
   authController.createUser
 );
@@ -28,3 +28,5 @@ router.put(
 router.delete('/users/:id', authMiddleware, allowRoles(ROLES.ADMIN), authController.deleteUser);
 
 export default router;
+
+
