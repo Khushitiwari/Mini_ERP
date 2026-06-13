@@ -18,6 +18,7 @@ const readAccess = [
 router.use(authMiddleware);
 
 router.get('/', allowRoles(...readAccess), stockController.getAllStock);
+router.get('/movement-summary', allowRoles(...readAccess), stockController.getStockMovementSummary);
 router.get('/:productId/ledger', allowRoles(...readAccess), stockController.getStockLedger);
 router.get('/:productId', allowRoles(...readAccess), stockController.getStockByProductId);
 router.post('/:productId/adjust', allowRoles(...fullAccess), stockController.adjustStock);

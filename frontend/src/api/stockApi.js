@@ -9,3 +9,6 @@ export const getStockLedger = async (productId) =>
 
 export const adjustStock = async (productId, payload) =>
   unwrap(await axiosInstance.post(`/stock/${productId}/adjust`, payload));
+
+export const getStockMovementSummary = async (days = 30) =>
+  unwrap(await axiosInstance.get(`/stock/movement-summary?days=${days}`));

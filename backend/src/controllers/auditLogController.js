@@ -3,7 +3,7 @@ import { successResponse } from '../utils/apiResponse.js';
 
 export const getAuditLogs = async (req, res, next) => {
   try {
-    const { entityType, userId, action, startDate, endDate } = req.query;
+    const { entityType, entityId, userId, action, startDate, endDate } = req.query;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
     const skip = (page - 1) * limit;
@@ -11,6 +11,7 @@ export const getAuditLogs = async (req, res, next) => {
     const where = {};
 
     if (entityType) where.entityType = entityType;
+    if (entityId) where.entityId = parseInt(entityId, 10);
     if (userId) where.userId = parseInt(userId, 10);
     if (action) where.action = action;
     if (startDate || endDate) {

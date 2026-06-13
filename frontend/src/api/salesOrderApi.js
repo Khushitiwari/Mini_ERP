@@ -5,6 +5,9 @@ const unwrap = (res) => res.data.data;
 export const getSalesOrders = async (params) =>
   unwrap(await axiosInstance.get('/sales-orders', { params }));
 
+export const getSalesOrderById = async (id) =>
+  unwrap(await axiosInstance.get(`/sales-orders/${id}`));
+
 export const createSalesOrder = async (payload) =>
   unwrap(await axiosInstance.post('/sales-orders', payload));
 

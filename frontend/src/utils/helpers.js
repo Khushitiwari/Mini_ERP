@@ -35,7 +35,7 @@ export const ROLE_MENU = {
 
 export const MENU_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', path: '/' },
-  { key: 'sales', label: 'Sales', path: '/sales' },
+  { key: 'sales', label: 'Sales', path: '/sales-orders' },
   { key: 'purchase', label: 'Purchase', path: '/purchase' },
   { key: 'manufacturing', label: 'Manufacturing', path: '/manufacturing' },
   { key: 'bom', label: 'BoM', path: '/bom' },
@@ -43,7 +43,7 @@ export const MENU_ITEMS = [
   { key: 'products', label: 'Products', path: '/products' },
   { key: 'customers', label: 'Customers', path: '/customers' },
   { key: 'vendors', label: 'Vendors', path: '/vendors' },
-  { key: 'audit', label: 'Audit Logs', path: '/audit' },
+  { key: 'audit', label: 'Audit Logs', path: '/audit-logs' },
   { key: 'users', label: 'User Management', path: '/users' },
 ];
 

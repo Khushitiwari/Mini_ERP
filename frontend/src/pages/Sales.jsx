@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -21,6 +22,7 @@ import { formatCurrency, formatDate, showError } from '../utils/helpers';
 const emptyItem = { productId: '', quantity: 1 };
 
 export default function Sales() {
+  const navigate = useNavigate();
   const {
     data,
     updateData,
@@ -154,7 +156,12 @@ export default function Sales() {
   };
 
   const columns = [
-    { field: 'id', headerName: 'SO #', width: 90, valueGetter: (v) => `SO-${v}` },
+    {
+      field: 'id',
+      headerName: 'SO #',
+      width: 90,
+      valueGetter: (value, row) => `SO-${row.id}`,
+    },
     { field: 'customerName', headerName: 'Customer', flex: 1 },
     {
       field: 'orderDate',
@@ -180,7 +187,7 @@ export default function Sales() {
       width: 200,
       sortable: false,
       renderCell: ({ row }) => (
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex gap-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
           {getActionLabel(row.status) && (
             <Button size="small" variant="contained" onClick={() => advanceStatus(row)}>
               {getActionLabel(row.status)}
@@ -215,7 +222,10 @@ export default function Sales() {
           autoHeight
           pageSizeOptions={[10, 25]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-          disableRowSelectionOnClick
+          onRowClick={(params) => navigate(`/sales-orders/${params.row.id}`)}
+          sx={{
+            '& .MuiDataGrid-row': { cursor: 'pointer' },
+          }}
         />
       </div>
 

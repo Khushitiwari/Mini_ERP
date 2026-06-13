@@ -5,6 +5,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Sales from './pages/Sales';
+import SalesOrderDetail from './pages/SalesOrderDetail';
 import Purchase from './pages/Purchase';
 import Manufacturing from './pages/Manufacturing';
 import BoM from './pages/BoM';
@@ -39,7 +40,9 @@ export default function App() {
         }
       >
         <Route index element={<ProtectedRoute menuKey="dashboard"><Dashboard /></ProtectedRoute>} />
-        <Route path="sales" element={<ProtectedRoute menuKey="sales"><Sales /></ProtectedRoute>} />
+        <Route path="sales-orders" element={<ProtectedRoute menuKey="sales"><Sales /></ProtectedRoute>} />
+        <Route path="sales-orders/:id" element={<ProtectedRoute menuKey="sales"><SalesOrderDetail /></ProtectedRoute>} />
+        <Route path="sales" element={<Navigate to="/sales-orders" replace />} />
         <Route path="purchase" element={<ProtectedRoute menuKey="purchase"><Purchase /></ProtectedRoute>} />
         <Route path="manufacturing" element={<ProtectedRoute menuKey="manufacturing"><Manufacturing /></ProtectedRoute>} />
         <Route path="bom" element={<ProtectedRoute menuKey="bom"><BoM /></ProtectedRoute>} />
@@ -47,7 +50,8 @@ export default function App() {
         <Route path="products" element={<ProtectedRoute menuKey="products"><Products /></ProtectedRoute>} />
         <Route path="customers" element={<ProtectedRoute menuKey="customers"><Customers /></ProtectedRoute>} />
         <Route path="vendors" element={<ProtectedRoute menuKey="vendors"><Vendors /></ProtectedRoute>} />
-        <Route path="audit" element={<ProtectedRoute menuKey="audit"><AuditLogs /></ProtectedRoute>} />
+        <Route path="audit-logs" element={<ProtectedRoute menuKey="audit"><AuditLogs /></ProtectedRoute>} />
+        <Route path="audit" element={<Navigate to="/audit-logs" replace />} />
         <Route
           path="users"
           element={

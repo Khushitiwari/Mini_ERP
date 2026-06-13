@@ -31,9 +31,21 @@ export const getSalesOrderById = async (req, res, next) => {
     const order = await prisma.salesOrder.findUnique({
       where: { id: parseInt(req.params.id, 10) },
       include: {
-        items: { include: { product: true } },
         customer: true,
-        creator: { select: { id: true, name: true, email: true } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                onHandQty: true,
+                reservedQty: true,
+                salesPrice: true,
+              },
+            },
+          },
+        },
+        creator: { select: { id: true, name: true } },
       },
     });
 
@@ -41,7 +53,8 @@ export const getSalesOrderById = async (req, res, next) => {
       return next(Object.assign(new Error('Sales order not found'), { statusCode: 404 }));
     }
 
-    return successResponse(res, order, 'Sales order retrieved');
+    const { creator, ...rest } = order;
+    return successResponse(res, { ...rest, createdByUser: creator }, 'Sales order retrieved');
   } catch (err) {
     next(err);
   }

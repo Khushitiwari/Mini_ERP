@@ -92,6 +92,16 @@ export const mapSalesOrderFromApi = (order) => {
   };
 };
 
+export const mapSalesOrderDetailFromApi = (order) => ({
+  ...order,
+  createdByUser: order.createdByUser ?? order.creator ?? null,
+  items: (order.items ?? []).map((i) => ({
+    ...i,
+    salesUnitPrice: i.salesUnitPrice ?? i.product?.salesPrice ?? 0,
+  })),
+  procurementActions: order.procurementActions ?? [],
+});
+
 export const mapManufacturingOrderFromApi = (mo) => ({
   id: mo.id,
   productId: mo.productId,
@@ -128,10 +138,12 @@ export const mapStockLedgerFromApi = (entry, products = []) => {
 export const mapBomFromApi = (bom) => ({
   id: bom.id,
   finishedProductId: bom.finishedProductId,
+  finishedProduct: bom.finishedProduct ?? null,
   finishedProductName: bom.finishedProduct?.name ?? '',
   components: (bom.components ?? []).map((c) => ({
     id: c.id,
     componentProductId: c.componentProductId,
+    componentProduct: c.componentProduct ?? null,
     componentName: c.componentProduct?.name ?? '',
     quantityRequired: c.quantityRequired,
   })),
