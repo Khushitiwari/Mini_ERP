@@ -2,6 +2,23 @@ import prisma from '../config/db.js';
 import { successResponse } from '../utils/apiResponse.js';
 import { logAudit } from '../middleware/auditLogger.js';
 
+export const getAllBoms = async (req, res, next) => {
+  try {
+    const boms = await prisma.boM.findMany({
+      include: {
+        finishedProduct: true,
+        components: { include: { componentProduct: true } },
+        operations: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    return successResponse(res, boms, 'BoMs retrieved');
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getBomByProductId = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);

@@ -8,7 +8,7 @@ const emptyComponent = { componentProductId: '', quantityRequired: 1 };
 const emptyOperation = { operationName: '', durationMinutes: 30, workCenter: '' };
 
 export default function BoM() {
-  const { data, updateData, addAuditLog } = useERP();
+  const { data, updateData, addAuditLog, refreshBoms } = useERP();
   const [productId, setProductId] = useState('');
   const [bom, setBom] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,8 @@ export default function BoM() {
       }
       const mapped = mapBomFromApi(result);
       setBom(mapped);
-      updateData('bom', { ...data.bom, [productId]: mapped });
+      updateData('bom', (prev) => ({ ...prev, [productId]: mapped }));
+      await refreshBoms();
       addAuditLog();
       alert('BoM saved successfully');
     } catch (err) {

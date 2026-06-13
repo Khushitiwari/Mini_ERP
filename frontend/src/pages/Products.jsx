@@ -1,9 +1,20 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import { DataGrid } from '@mui/x-data-grid';
+import { Plus } from 'lucide-react';
 import { useERP } from '../context/ERPContext';
 import { useAuth } from '../context/AuthContext';
 import * as productApi from '../api/productApi';
-import { mapProductFromApi, mapProductToApi } from '../api/mappers';
-import { usePolling } from '../hooks/usePolling';
+import { mapProductToApi } from '../api/mappers';
+import StockChip from '../components/common/StockChip';
 import { canWriteProducts, formatCurrency, showError } from '../utils/helpers';
 
 const emptyProduct = {
@@ -21,23 +32,13 @@ const emptyProduct = {
 };
 
 export default function Products() {
-  const { data, updateData, addAuditLog, syncStockFromBackend } = useERP();
+  const { data, updateData, addAuditLog, refreshProducts } = useERP();
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...emptyProduct });
 
   const canWrite = canWriteProducts(user?.role);
-
-  const poll = useCallback(async () => {
-    try {
-      await syncStockFromBackend();
-    } catch {
-      /* silent poll failure */
-    }
-  }, [syncStockFromBackend]);
-
-  usePolling(poll, 4000);
 
   const resetForm = () => {
     setForm({ ...emptyProduct });
@@ -50,6 +51,7 @@ export default function Products() {
       ...product,
       typeRaw: product.type === 'Raw Material' ? 'RAW_MATERIAL' : 'FINISHED_GOOD',
       defaultVendorId: product.defaultVendorId ?? '',
+      procurementType: product.procurementType ?? '',
     });
     setEditingId(product.id);
     setShowForm(true);
@@ -63,17 +65,11 @@ export default function Products() {
     try {
       const payload = mapProductToApi(form);
       if (editingId) {
-        const updated = await productApi.updateProduct(editingId, payload);
-        const mapped = mapProductFromApi(updated);
-        updateData(
-          'products',
-          data.products.map((p) => (p.id === mapped.id ? mapped : p))
-        );
+        await productApi.updateProduct(editingId, payload);
       } else {
-        const created = await productApi.createProduct(payload);
-        const mapped = mapProductFromApi(created);
-        updateData('products', [...data.products, mapped]);
+        await productApi.createProduct(payload);
       }
+      await refreshProducts();
       addAuditLog();
       resetForm();
     } catch (err) {
@@ -85,12 +81,68 @@ export default function Products() {
     if (!window.confirm('Delete this product?')) return;
     try {
       await productApi.deleteProduct(id);
-      updateData('products', data.products.filter((p) => p.id !== id));
+      updateData('products', (prev) => prev.filter((p) => p.id !== id));
       addAuditLog();
     } catch (err) {
       showError(err, 'Failed to delete product');
     }
   };
+
+  const columns = [
+    { field: 'name', headerName: 'Name', flex: 1 },
+    { field: 'sku', headerName: 'SKU', width: 110 },
+    { field: 'type', headerName: 'Type', width: 130 },
+    {
+      field: 'salesPrice',
+      headerName: 'Sales Price',
+      width: 120,
+      valueFormatter: (v) => formatCurrency(v),
+    },
+    {
+      field: 'costPrice',
+      headerName: 'Cost Price',
+      width: 120,
+      valueFormatter: (v) => formatCurrency(v),
+    },
+    {
+      field: 'onHand',
+      headerName: 'On Hand',
+      width: 100,
+      renderCell: ({ row }) => <StockChip qty={row.onHand} label="On Hand" />,
+    },
+    { field: 'reserved', headerName: 'Reserved', width: 100 },
+    {
+      field: 'freeToUse',
+      headerName: 'Free to Use',
+      width: 130,
+      renderCell: ({ row }) => <StockChip qty={row.freeToUse} label="Free" />,
+    },
+    {
+      field: 'procurementStrategy',
+      headerName: 'Strategy',
+      width: 90,
+    },
+    ...(canWrite
+      ? [
+          {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 160,
+            sortable: false,
+            renderCell: ({ row }) => (
+              <div className="flex gap-1">
+                <Button size="small" variant="outlined" onClick={() => handleEdit(row)}>
+                  Edit
+                </Button>
+                <Button size="small" color="error" variant="outlined" onClick={() => handleDelete(row.id)}>
+                  Delete
+                </Button>
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="page">
@@ -102,101 +154,119 @@ export default function Products() {
           </p>
         </div>
         {canWrite && (
-          <button type="button" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Cancel' : 'New Product'}
-          </button>
+          <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowForm(true)}>
+            New Product
+          </Button>
         )}
       </div>
 
-      {showForm && canWrite && (
-        <div className="card form-card">
-          <h3>{editingId ? 'Edit Product' : 'Create Product'}</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Name</label>
-              <input className="form-control" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label>SKU</label>
-              <input className="form-control" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label>Type</label>
-              <select
-                className="form-control"
-                value={form.type}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    type: e.target.value,
-                    typeRaw: e.target.value === 'Raw Material' ? 'RAW_MATERIAL' : 'FINISHED_GOOD',
-                  })
-                }
-              >
-                <option value="Finished Good">Finished Good</option>
-                <option value="Raw Material">Raw Material</option>
-              </select>
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Sales Price</label>
-              <input type="number" className="form-control" value={form.salesPrice} onChange={(e) => setForm({ ...form, salesPrice: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label>Cost Price</label>
-              <input type="number" className="form-control" value={form.costPrice} onChange={(e) => setForm({ ...form, costPrice: e.target.value })} />
-            </div>
-            {!editingId && (
-              <div className="form-group">
-                <label>Initial Stock</label>
-                <input type="number" className="form-control" value={form.onHand} onChange={(e) => setForm({ ...form, onHand: e.target.value })} />
-              </div>
-            )}
-          </div>
-          <button type="button" className="btn btn-primary" onClick={handleSave}>
-            {editingId ? 'Update' : 'Create'}
-          </button>
-        </div>
-      )}
-
-      <div className="card">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>SKU</th>
-              <th>Type</th>
-              <th>Sales Price</th>
-              <th>Cost Price</th>
-              <th>On Hand</th>
-              <th>Reserved</th>
-              <th>Free</th>
-              {canWrite && <th>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {data.products.map((p) => (
-              <tr key={p.id}>
-                <td>{p.name}</td>
-                <td>{p.sku}</td>
-                <td>{p.type}</td>
-                <td>{formatCurrency(p.salesPrice)}</td>
-                <td>{formatCurrency(p.costPrice)}</td>
-                <td>{p.onHand}</td>
-                <td>{p.reserved}</td>
-                <td>{p.freeToUse}</td>
-                {canWrite && (
-                  <td className="actions-cell">
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleEdit(p)}>Edit</button>
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDelete(p.id)}>Delete</button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="card p-0 overflow-hidden">
+        <DataGrid
+          rows={data.products}
+          columns={columns}
+          autoHeight
+          pageSizeOptions={[10, 25]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          disableRowSelectionOnClick
+        />
       </div>
+
+      <Dialog open={showForm && canWrite} onClose={resetForm} maxWidth="md" fullWidth>
+        <DialogTitle>{editingId ? 'Edit Product' : 'Create Product'}</DialogTitle>
+        <DialogContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <TextField label="Name" size="small" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <TextField label="SKU" size="small" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+            <TextField
+              select
+              label="Type"
+              size="small"
+              value={form.type}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  type: e.target.value,
+                  typeRaw: e.target.value === 'Raw Material' ? 'RAW_MATERIAL' : 'FINISHED_GOOD',
+                })
+              }
+            >
+              <MenuItem value="Finished Good">Finished Good</MenuItem>
+              <MenuItem value="Raw Material">Raw Material</MenuItem>
+            </TextField>
+            <TextField
+              type="number"
+              label="Sales Price"
+              size="small"
+              value={form.salesPrice}
+              onChange={(e) => setForm({ ...form, salesPrice: e.target.value })}
+            />
+            <TextField
+              type="number"
+              label="Cost Price"
+              size="small"
+              value={form.costPrice}
+              onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
+            />
+            {!editingId && (
+              <TextField
+                type="number"
+                label="Initial Stock"
+                size="small"
+                value={form.onHand}
+                onChange={(e) => setForm({ ...form, onHand: e.target.value })}
+              />
+            )}
+            <TextField
+              select
+              label="Procurement Strategy"
+              size="small"
+              value={form.procurementStrategy}
+              onChange={(e) => setForm({ ...form, procurementStrategy: e.target.value })}
+            >
+              <MenuItem value="MTS">MTS (Make to Stock)</MenuItem>
+              <MenuItem value="MTO">MTO (Make to Order)</MenuItem>
+            </TextField>
+            <TextField
+              select
+              label="Procurement Type"
+              size="small"
+              value={form.procurementType || ''}
+              onChange={(e) => setForm({ ...form, procurementType: e.target.value })}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="PURCHASE">Purchase</MenuItem>
+              <MenuItem value="MANUFACTURING">Manufacturing</MenuItem>
+            </TextField>
+            <TextField
+              select
+              label="Default Vendor"
+              size="small"
+              value={form.defaultVendorId || ''}
+              onChange={(e) => setForm({ ...form, defaultVendorId: e.target.value })}
+            >
+              <MenuItem value="">None</MenuItem>
+              {data.vendors.map((v) => (
+                <MenuItem key={v.id} value={v.id}>{v.name}</MenuItem>
+              ))}
+            </TextField>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.procureOnDemand}
+                  onChange={(e) => setForm({ ...form, procureOnDemand: e.target.checked })}
+                />
+              }
+              label="Procure on Demand"
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={resetForm}>Cancel</Button>
+          <Button variant="contained" onClick={handleSave}>
+            {editingId ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

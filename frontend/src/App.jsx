@@ -10,6 +10,8 @@ import Manufacturing from './pages/Manufacturing';
 import BoM from './pages/BoM';
 import Inventory from './pages/Inventory';
 import Products from './pages/Products';
+import Customers from './pages/Customers';
+import Vendors from './pages/Vendors';
 import AuditLogs from './pages/AuditLogs';
 import UserManagement from './pages/UserManagement';
 
@@ -43,6 +45,8 @@ export default function App() {
         <Route path="bom" element={<ProtectedRoute menuKey="bom"><BoM /></ProtectedRoute>} />
         <Route path="inventory" element={<ProtectedRoute menuKey="inventory"><Inventory /></ProtectedRoute>} />
         <Route path="products" element={<ProtectedRoute menuKey="products"><Products /></ProtectedRoute>} />
+        <Route path="customers" element={<ProtectedRoute menuKey="customers"><Customers /></ProtectedRoute>} />
+        <Route path="vendors" element={<ProtectedRoute menuKey="vendors"><Vendors /></ProtectedRoute>} />
         <Route path="audit" element={<ProtectedRoute menuKey="audit"><AuditLogs /></ProtectedRoute>} />
         <Route
           path="users"

@@ -42,6 +42,7 @@ const confirmSalesOrder = async (orderId) => {
 
   // Dynamic import to avoid circular dependency
   const procurementService = await import('./procurementService.js');
+  const procurementActions = [];
 
   for (const item of order.items) {
     const freeQty = await stockService.getFreeToUseQty(item.productId);
@@ -54,12 +55,23 @@ const confirmSalesOrder = async (orderId) => {
       }
       const product = item.product;
       if (product.procureOnDemand || product.procurementStrategy === 'MTO') {
-        await procurementService.triggerProcurement(item.productId, shortageQty, order.createdBy);
+        const createdOrder = await procurementService.triggerProcurement(
+          item.productId,
+          shortageQty,
+          order.createdBy
+        );
+        procurementActions.push({
+          type: product.procurementType === 'MANUFACTURING' ? 'MANUFACTURING_ORDER' : 'PURCHASE_ORDER',
+          order: createdOrder,
+          shortageQty,
+          productId: item.productId,
+          productName: product.name,
+        });
       }
     }
   }
 
-  return prisma.salesOrder.update({
+  const updatedOrder = await prisma.salesOrder.update({
     where: { id: orderId },
     data: { status: 'CONFIRMED' },
     include: {
@@ -68,6 +80,8 @@ const confirmSalesOrder = async (orderId) => {
       creator: { select: { id: true, name: true, email: true } },
     },
   });
+
+  return { order: updatedOrder, procurementActions };
 };
 
 const deliverSalesOrder = async (orderId, deliveredItems, userId) => {

@@ -1,16 +1,39 @@
 import { useState } from 'react';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Chip from '@mui/material/Chip';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import { DataGrid } from '@mui/x-data-grid';
+import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { useERP } from '../context/ERPContext';
 import * as salesOrderApi from '../api/salesOrderApi';
+import * as customerApi from '../api/customerApi';
 import { mapSalesOrderFromApi, toDeliverPayload } from '../api/mappers';
+import EntityAutocomplete from '../components/common/EntityAutocomplete';
 import { formatCurrency, formatDate, showError } from '../utils/helpers';
 
 const emptyItem = { productId: '', quantity: 1 };
 
 export default function Sales() {
-  const { data, updateData, addAuditLog, syncStockFromBackend } = useERP();
+  const {
+    data,
+    updateData,
+    addAuditLog,
+    syncStockFromBackend,
+    refreshCustomers,
+    refreshPurchaseOrders,
+    refreshManufacturingOrders,
+  } = useERP();
   const [showForm, setShowForm] = useState(false);
   const [customerId, setCustomerId] = useState('');
   const [items, setItems] = useState([{ ...emptyItem }]);
+  const [procurementAlert, setProcurementAlert] = useState(null);
 
   const finishedGoods = data.products.filter((p) => p.type === 'Finished Good');
 
@@ -39,6 +62,12 @@ export default function Sales() {
     setShowForm(false);
   };
 
+  const handleCreateCustomer = async (payload) => {
+    const created = await customerApi.createCustomer(payload);
+    await refreshCustomers();
+    return created;
+  };
+
   const handleCreate = async () => {
     if (!customerId || items.some((i) => !i.productId || !i.quantity)) {
       alert('Please select customer and fill all line items');
@@ -55,7 +84,7 @@ export default function Sales() {
       const created = await salesOrderApi.createSalesOrder(payload);
       const mapped = mapSalesOrderFromApi(created);
       if (!mapped.total) mapped.total = calcTotal(items);
-      updateData('salesOrders', [...data.salesOrders, mapped]);
+      updateData('salesOrders', (prev) => [...prev, mapped]);
       addAuditLog();
       resetForm();
     } catch (err) {
@@ -68,7 +97,17 @@ export default function Sales() {
       let updated;
       if (order.status === 'Draft') {
         updated = await salesOrderApi.confirmSalesOrder(order.id);
+        console.log('Confirm SO response:', updated);
         await syncStockFromBackend();
+
+        const actions = updated.procurementActions ?? [];
+        if (actions.length > 0) {
+          setProcurementAlert(actions[0]);
+          const hasPO = actions.some((a) => a.type === 'PURCHASE_ORDER');
+          const hasMO = actions.some((a) => a.type === 'MANUFACTURING_ORDER');
+          if (hasPO) await refreshPurchaseOrders();
+          if (hasMO) await refreshManufacturingOrders();
+        }
       } else if (order.status === 'Confirmed' || order.status === 'Partially Delivered') {
         const deliverItems = toDeliverPayload(order.items);
         updated = await salesOrderApi.deliverSalesOrder(order.id, deliverItems);
@@ -78,10 +117,7 @@ export default function Sales() {
       }
 
       const mapped = mapSalesOrderFromApi(updated);
-      updateData(
-        'salesOrders',
-        data.salesOrders.map((o) => (o.id === mapped.id ? mapped : o))
-      );
+      updateData('salesOrders', (prev) => prev.map((o) => (o.id === mapped.id ? mapped : o)));
       addAuditLog();
     } catch (err) {
       showError(err, 'Failed to update sales order');
@@ -92,10 +128,7 @@ export default function Sales() {
     try {
       const updated = await salesOrderApi.cancelSalesOrder(order.id);
       const mapped = mapSalesOrderFromApi(updated);
-      updateData(
-        'salesOrders',
-        data.salesOrders.map((o) => (o.id === mapped.id ? mapped : o))
-      );
+      updateData('salesOrders', (prev) => prev.map((o) => (o.id === mapped.id ? mapped : o)));
       await syncStockFromBackend();
       addAuditLog();
     } catch (err) {
@@ -109,6 +142,60 @@ export default function Sales() {
     return null;
   };
 
+  const statusColor = (status) => {
+    const map = {
+      Draft: 'default',
+      Confirmed: 'info',
+      'Partially Delivered': 'warning',
+      'Fully Delivered': 'success',
+      Cancelled: 'error',
+    };
+    return map[status] ?? 'default';
+  };
+
+  const columns = [
+    { field: 'id', headerName: 'SO #', width: 90, valueGetter: (v) => `SO-${v}` },
+    { field: 'customerName', headerName: 'Customer', flex: 1 },
+    {
+      field: 'orderDate',
+      headerName: 'Date',
+      width: 120,
+      valueFormatter: (v) => formatDate(v),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 160,
+      renderCell: ({ value }) => <Chip label={value} color={statusColor(value)} size="small" />,
+    },
+    {
+      field: 'total',
+      headerName: 'Total',
+      width: 120,
+      valueFormatter: (v) => formatCurrency(v),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 200,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <div className="flex gap-1 flex-wrap">
+          {getActionLabel(row.status) && (
+            <Button size="small" variant="contained" onClick={() => advanceStatus(row)}>
+              {getActionLabel(row.status)}
+            </Button>
+          )}
+          {!['Fully Delivered', 'Cancelled'].includes(row.status) && (
+            <Button size="small" color="error" variant="outlined" onClick={() => handleCancel(row)}>
+              Cancel
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="page">
       <div className="page-header">
@@ -116,100 +203,96 @@ export default function Sales() {
           <h2>Sales Orders</h2>
           <p className="page-subtitle">Create, confirm, and deliver sales orders</p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'New Sales Order'}
-        </button>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowForm(true)}>
+          New Sales Order
+        </Button>
       </div>
 
-      {showForm && (
-        <div className="card form-card">
-          <h3>Create Sales Order</h3>
-          <div className="form-group">
-            <label>Customer</label>
-            <select className="form-control" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-              <option value="">Select customer</option>
-              {data.customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+      <div className="card p-0 overflow-hidden">
+        <DataGrid
+          rows={data.salesOrders}
+          columns={columns}
+          autoHeight
+          pageSizeOptions={[10, 25]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          disableRowSelectionOnClick
+        />
+      </div>
+
+      <Dialog open={showForm} onClose={resetForm} maxWidth="md" fullWidth>
+        <DialogTitle>Create Sales Order</DialogTitle>
+        <DialogContent>
+          <div className="flex flex-col gap-4 pt--2">
+            <EntityAutocomplete
+              label="Customer"
+              options={data.customers}
+              value={customerId}
+              onChange={setCustomerId}
+              onCreate={handleCreateCustomer}
+            />
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Line Items</h4>
+              {items.map((item, idx) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <TextField
+                    select
+                    size="small"
+                    label="Product"
+                    value={item.productId}
+                    onChange={(e) => handleItemChange(idx, 'productId', e.target.value)}
+                    sx={{ flex: 2 }}
+                  >
+                    <MenuItem value="">Select product</MenuItem>
+                    {finishedGoods.map((p) => (
+                      <MenuItem key={p.id} value={p.id}>
+                        {p.name} ({p.sku})
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    type="number"
+                    size="small"
+                    label="Qty"
+                    value={item.quantity}
+                    onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
+                    inputProps={{ min: 1 }}
+                    sx={{ width: 100 }}
+                  />
+                  <Button size="small" color="error" onClick={() => handleRemoveLine(idx)}>
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
               ))}
-            </select>
+              <Button size="small" variant="outlined" startIcon={<Plus size={14} />} onClick={handleAddLine}>
+                Add Line
+              </Button>
+            </div>
+            <p className="font-semibold">Total: {formatCurrency(calcTotal(items))}</p>
           </div>
-          <div className="line-items">
-            <h4>Line Items</h4>
-            {items.map((item, idx) => (
-              <div key={idx} className="line-item-row">
-                <select
-                  className="form-control"
-                  value={item.productId}
-                  onChange={(e) => handleItemChange(idx, 'productId', e.target.value)}
-                >
-                  <option value="">Select product</option>
-                  {finishedGoods.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  className="form-control"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                />
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleRemoveLine(idx)}>
-                  Remove
-                </button>
-              </div>
-            ))}
-            <button type="button" className="btn btn-secondary btn-sm" onClick={handleAddLine}>
-              Add Line
-            </button>
-          </div>
-          <p className="order-total">Total: {formatCurrency(calcTotal(items))}</p>
-          <button type="button" className="btn btn-primary" onClick={handleCreate}>
-            Create Order
-          </button>
-        </div>
-      )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={resetForm}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreate}>Create Order</Button>
+        </DialogActions>
+      </Dialog>
 
-      <div className="card">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>SO #</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Total</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.salesOrders.map((order) => (
-              <tr key={order.id}>
-                <td>SO-{order.id}</td>
-                <td>{order.customerName}</td>
-                <td>{formatDate(order.orderDate)}</td>
-                <td><span className={`status-badge status-${order.status.replace(/\s+/g, '-').toLowerCase()}`}>{order.status}</span></td>
-                <td>{formatCurrency(order.total)}</td>
-                <td className="actions-cell">
-                  {getActionLabel(order.status) && (
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => advanceStatus(order)}>
-                      {getActionLabel(order.status)}
-                    </button>
-                  )}
-                  {!['Fully Delivered', 'Cancelled'].includes(order.status) && (
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => handleCancel(order)}>
-                      Cancel
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {data.salesOrders.length === 0 && (
-              <tr><td colSpan="6" className="empty-row">No sales orders yet</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Snackbar
+        open={Boolean(procurementAlert)}
+        autoHideDuration={6000}
+        onClose={() => setProcurementAlert(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="warning"
+          icon={<AlertTriangle size={20} />}
+          onClose={() => setProcurementAlert(null)}
+        >
+          Stock shortage detected — Auto-created{' '}
+          {procurementAlert?.type === 'MANUFACTURING_ORDER' ? 'Manufacturing Order' : 'Purchase Order'}{' '}
+          {procurementAlert?.order?.id} for {procurementAlert?.shortageQty} units of{' '}
+          {procurementAlert?.productName}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

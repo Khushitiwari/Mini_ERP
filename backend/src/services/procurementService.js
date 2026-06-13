@@ -1,6 +1,8 @@
 import prisma from '../config/db.js';
 
 const triggerProcurement = async (productId, shortageQty, userId) => {
+  console.log('[procurement] triggerProcurement called', { productId, shortageQty, userId });
+
   const product = await prisma.product.findUnique({
     where: { id: productId },
     include: { defaultVendor: true },
@@ -21,7 +23,15 @@ const triggerProcurement = async (productId, shortageQty, userId) => {
   const purchaseService = await import('./purchaseService.js');
   const manufacturingService = await import('./manufacturingService.js');
 
+  console.log('[procurement] product config', {
+    name: product.name,
+    procurementType: product.procurementType,
+    procureOnDemand: product.procureOnDemand,
+    defaultVendorId: product.defaultVendorId,
+  });
+
   if (product.procurementType === 'PURCHASE') {
+    console.log('[procurement] creating auto PO for shortage', shortageQty);
     if (!product.defaultVendorId) {
       throw Object.assign(
         new Error(`No default vendor configured for product ${product.name}`),
@@ -38,6 +48,7 @@ const triggerProcurement = async (productId, shortageQty, userId) => {
   }
 
   if (product.procurementType === 'MANUFACTURING') {
+    console.log('[procurement] creating auto MO for shortage', shortageQty);
     return manufacturingService.createManufacturingOrder(productId, shortageQty, userId, true);
   }
 

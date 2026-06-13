@@ -18,6 +18,7 @@ const readAccess = [
 
 router.use(authMiddleware);
 
+router.get('/', allowRoles(...readAccess), bomController.getAllBoms);
 router.get('/:productId', allowRoles(...readAccess), bomController.getBomByProductId);
 router.post('/', allowRoles(...fullAccess), validate(bomSchema), bomController.createBom);
 router.put('/:id', allowRoles(...fullAccess), bomController.updateBom);

@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import * as authApi from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
 import { DEMO_ACCOUNTS } from '../utils/helpers';
+import BackgroundBeams from '../components/aceternity/BackgroundBeams';
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
@@ -32,47 +37,46 @@ export default function Login() {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <h2>Shiv Furniture Works</h2>
-        <p className="login-subtitle">Sign in to Mini ERP</p>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
+    <div className="login-page relative overflow-hidden">
+      <BackgroundBeams />
+      <Card className="login-card relative z-10 !shadow-xl" sx={{ maxWidth: 420, width: '100%' }}>
+        <CardContent sx={{ p: 4 }}>
+          <h2 className="text-2xl font-bold text-center mb-1">Shiv Furniture Works</h2>
+          <p className="login-subtitle text-center mb-6">Sign in to Mini ERP</p>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <TextField
+              label="Email"
               type="email"
-              className="form-control"
+              size="small"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              fullWidth
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
+            <TextField
+              label="Password"
               type="password"
-              className="form-control"
+              size="small"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              fullWidth
             />
+            {error && <p className="form-error">{error}</p>}
+            <Button type="submit" variant="contained" fullWidth disabled={submitting}>
+              {submitting ? 'Logging in...' : 'Login'}
+            </Button>
+          </form>
+          <div className="login-hints mt-6">
+            <p><strong>Demo Accounts</strong> (password: password123)</p>
+            {DEMO_ACCOUNTS.map((account) => (
+              <p key={account.email} className="text-sm">
+                {account.email} — {account.role}
+              </p>
+            ))}
           </div>
-          {error && <p className="form-error">{error}</p>}
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        <div className="login-hints">
-          <p><strong>Demo Accounts</strong> (password: password123)</p>
-          {DEMO_ACCOUNTS.map((account) => (
-            <p key={account.email}>
-              {account.email} — {account.role}
-            </p>
-          ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

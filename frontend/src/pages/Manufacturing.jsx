@@ -1,11 +1,29 @@
 import { useState } from 'react';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Chip from '@mui/material/Chip';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Plus, Play, CheckCircle, CheckCircle2, Zap } from 'lucide-react';
 import { useERP } from '../context/ERPContext';
 import * as manufacturingOrderApi from '../api/manufacturingOrderApi';
 import { mapManufacturingOrderFromApi } from '../api/mappers';
 import { showError } from '../utils/helpers';
 
 export default function Manufacturing() {
-  const { data, updateData, addAuditLog, syncStockFromBackend } = useERP();
+  const { data, updateData, addAuditLog, syncStockFromBackend, refreshStockLedger } = useERP();
   const [showForm, setShowForm] = useState(false);
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -29,7 +47,7 @@ export default function Manufacturing() {
         quantity: Number(quantity),
       });
       const mapped = mapManufacturingOrderFromApi(created);
-      updateData('manufacturingOrders', [...data.manufacturingOrders, mapped]);
+      updateData('manufacturingOrders', (prev) => [...prev, mapped]);
       await syncStockFromBackend();
       addAuditLog();
       resetForm();
@@ -38,58 +56,49 @@ export default function Manufacturing() {
     }
   };
 
-  const advanceStatus = async (mo) => {
+  const handleStart = async (id) => {
     try {
-      if (mo.status === 'Draft') {
-        const updated = await manufacturingOrderApi.startMO(mo.id);
-        const mapped = mapManufacturingOrderFromApi(updated);
-        updateData(
-          'manufacturingOrders',
-          data.manufacturingOrders.map((o) => (o.id === mapped.id ? mapped : o))
-        );
-        addAuditLog();
-        return;
-      }
-
-      if (mo.status === 'In Progress') {
-        const activeWO = mo.workOrders.find((wo) => wo.status === 'In Progress');
-        if (activeWO) {
-          const updated = await manufacturingOrderApi.completeWorkOrder(mo.id, activeWO.id);
-          const mapped = mapManufacturingOrderFromApi(updated);
-          updateData(
-            'manufacturingOrders',
-            data.manufacturingOrders.map((o) => (o.id === mapped.id ? mapped : o))
-          );
-          addAuditLog();
-          return;
-        }
-
-        const allDone = mo.workOrders.every((wo) => wo.status === 'Done');
-        if (allDone) {
-          const updated = await manufacturingOrderApi.completeMO(mo.id);
-          const mapped = mapManufacturingOrderFromApi(updated);
-          updateData(
-            'manufacturingOrders',
-            data.manufacturingOrders.map((o) => (o.id === mapped.id ? mapped : o))
-          );
-          await syncStockFromBackend();
-          addAuditLog();
-        }
-      }
+      const updated = await manufacturingOrderApi.startMO(id);
+      const mapped = mapManufacturingOrderFromApi(updated);
+      updateData('manufacturingOrders', (prev) => prev.map((o) => (o.id === mapped.id ? mapped : o)));
+      addAuditLog();
     } catch (err) {
-      showError(err, 'Failed to update manufacturing order');
+      showError(err, 'Failed to start manufacturing order');
     }
   };
 
-  const getActionLabel = (mo) => {
-    if (mo.status === 'Draft') return 'Start';
-    if (mo.status === 'In Progress') {
-      const activeWO = mo.workOrders.find((wo) => wo.status === 'In Progress');
-      if (activeWO) return `Complete: ${activeWO.operationName}`;
-      const allDone = mo.workOrders.every((wo) => wo.status === 'Done');
-      if (allDone) return 'Complete MO';
+  const handleCompleteWorkOrder = async (moId, woId) => {
+    try {
+      const updated = await manufacturingOrderApi.completeWorkOrder(moId, woId);
+      const mapped = mapManufacturingOrderFromApi(updated);
+      updateData('manufacturingOrders', (prev) => prev.map((o) => (o.id === mapped.id ? mapped : o)));
+      addAuditLog();
+    } catch (err) {
+      showError(err, 'Failed to complete work order');
     }
-    return null;
+  };
+
+  const handleCompleteMO = async (id) => {
+    try {
+      const updated = await manufacturingOrderApi.completeMO(id);
+      const mapped = mapManufacturingOrderFromApi(updated);
+      updateData('manufacturingOrders', (prev) => prev.map((o) => (o.id === mapped.id ? mapped : o)));
+      await syncStockFromBackend();
+      await refreshStockLedger(mapped.productId);
+      addAuditLog();
+    } catch (err) {
+      showError(err, 'Failed to complete manufacturing order');
+    }
+  };
+
+  const woStatusColor = (status) => {
+    const map = { Pending: 'default', 'In Progress': 'info', Done: 'success' };
+    return map[status] ?? 'default';
+  };
+
+  const moStatusColor = (status) => {
+    const map = { Draft: 'default', 'In Progress': 'info', Completed: 'success', Cancelled: 'error' };
+    return map[status] ?? 'default';
   };
 
   return (
@@ -99,84 +108,137 @@ export default function Manufacturing() {
           <h2>Manufacturing Orders</h2>
           <p className="page-subtitle">Create and manage production orders</p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : 'New MO'}
-        </button>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowForm(true)}>
+          New MO
+        </Button>
       </div>
 
-      {showForm && (
-        <div className="card form-card">
-          <h3>Create Manufacturing Order</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Finished Product</label>
-              <select className="form-control" value={productId} onChange={(e) => setProductId(e.target.value)}>
-                <option value="">Select product</option>
-                {finishedGoods.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Quantity</label>
-              <input
-                type="number"
-                className="form-control"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-            </div>
-          </div>
-          <button type="button" className="btn btn-primary" onClick={handleCreate}>
-            Create MO
-          </button>
-        </div>
-      )}
-
-      <div className="card">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>MO #</th>
-              <th>Product</th>
-              <th>Qty</th>
-              <th>Status</th>
-              <th>Work Orders</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.manufacturingOrders.map((mo) => (
-              <tr key={mo.id}>
-                <td>MO-{mo.id}</td>
-                <td>{mo.productName}</td>
-                <td>{mo.quantity}</td>
-                <td><span className={`status-badge status-${mo.status.replace(/\s+/g, '-').toLowerCase()}`}>{mo.status}</span></td>
-                <td>
-                  <ul className="wo-list">
-                    {mo.workOrders.map((wo) => (
-                      <li key={wo.id}>
-                        {wo.operationName} — <span className="wo-status">{wo.status}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </td>
-                <td className="actions-cell">
-                  {getActionLabel(mo) && (
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => advanceStatus(mo)}>
-                      {getActionLabel(mo)}
-                    </button>
+      <div className="flex flex-col gap-2">
+        {data.manufacturingOrders.length === 0 && (
+          <div className="card empty-row">No manufacturing orders yet</div>
+        )}
+        {data.manufacturingOrders.map((order) => (
+          <Accordion key={order.id} className="card !shadow-sm">
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <div className="flex flex-wrap items-center gap-3 w-full pr-4">
+                <span className="font-semibold flex items-center gap-1">
+                  MO-{order.id}
+                  {order.autoGenerated && (
+                    <Chip label="Auto" color="warning" size="small" icon={<Zap size={14} />} />
                   )}
-                </td>
-              </tr>
-            ))}
-            {data.manufacturingOrders.length === 0 && (
-              <tr><td colSpan="6" className="empty-row">No manufacturing orders yet</td></tr>
-            )}
-          </tbody>
-        </table>
+                </span>
+                <span>{order.productName}</span>
+                <span>Qty: {order.quantity}</span>
+                <Chip label={order.status} color={moStatusColor(order.status)} size="small" />
+              </div>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Table size="small" sx={{ mb: 2 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Operation</TableCell>
+                    <TableCell>Work Center</TableCell>
+                    <TableCell>Duration (min)</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {order.workOrders.map((wo) => (
+                    <TableRow key={wo.id}>
+                      <TableCell>{wo.operationName}</TableCell>
+                      <TableCell>{wo.workCenter || '—'}</TableCell>
+                      <TableCell>{wo.durationMinutes}</TableCell>
+                      <TableCell>
+                        <Chip label={wo.status} color={woStatusColor(wo.status)} size="small" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              <div className="table-actions flex flex-wrap gap-2">
+                {order.status === 'Draft' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<Play size={16} />}
+                    onClick={() => handleStart(order.id)}
+                  >
+                    Start
+                  </Button>
+                )}
+                {order.status === 'In Progress' && (
+                  <>
+                    {order.workOrders
+                      .filter((wo) => wo.status !== 'Done')
+                      .map((wo) => (
+                        <Button
+                          key={wo.id}
+                          variant="outlined"
+                          size="small"
+                          startIcon={<CheckCircle size={16} />}
+                          onClick={() => handleCompleteWorkOrder(order.id, wo.id)}
+                        >
+                          Complete {wo.operationName}
+                        </Button>
+                      ))}
+                    {order.workOrders.every((wo) => wo.status === 'Done') && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        startIcon={<CheckCircle2 size={16} />}
+                        onClick={() => handleCompleteMO(order.id)}
+                      >
+                        Complete MO
+                      </Button>
+                    )}
+                  </>
+                )}
+                {order.status === 'Completed' && (
+                  <Chip label="Completed" color="success" icon={<CheckCircle2 size={14} />} size="small" />
+                )}
+              </div>
+            </AccordionDetails>
+          </Accordion>
+        ))}
       </div>
+
+      <Dialog open={showForm} onClose={resetForm} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Manufacturing Order</DialogTitle>
+        <DialogContent>
+          <div className="flex flex-col gap-4 pt-2">
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label="Finished Product"
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+            >
+              <MenuItem value="">Select product</MenuItem>
+              {finishedGoods.map((p) => (
+                <MenuItem key={p.id} value={p.id}>
+                  {p.name} ({p.sku})
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              type="number"
+              fullWidth
+              size="small"
+              label="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              inputProps={{ min: 1 }}
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={resetForm}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreate}>Create MO</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

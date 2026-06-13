@@ -6,7 +6,7 @@ import { showError } from '../utils/helpers';
 const emptyVendor = { name: '', email: '', phone: '', address: '' };
 
 export default function Vendors() {
-  const { data, updateData, addAuditLog } = useERP();
+  const { data, updateData, addAuditLog, refreshVendors } = useERP();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...emptyVendor });
@@ -35,14 +35,11 @@ export default function Vendors() {
     }
     try {
       if (editingId) {
-        const updated = await vendorApi.updateVendor(editingId, form);
-        updateData(
-          'vendors',
-          data.vendors.map((v) => (v.id === updated.id ? updated : v))
-        );
+        await vendorApi.updateVendor(editingId, form);
+        await refreshVendors();
       } else {
-        const created = await vendorApi.createVendor(form);
-        updateData('vendors', [...data.vendors, created]);
+        await vendorApi.createVendor(form);
+        await refreshVendors();
       }
       addAuditLog();
       resetForm();

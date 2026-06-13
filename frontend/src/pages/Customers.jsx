@@ -6,7 +6,7 @@ import { showError } from '../utils/helpers';
 const emptyCustomer = { name: '', email: '', phone: '', address: '' };
 
 export default function Customers() {
-  const { data, updateData, addAuditLog } = useERP();
+  const { data, updateData, addAuditLog, refreshCustomers } = useERP();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ ...emptyCustomer });
@@ -36,13 +36,10 @@ export default function Customers() {
     try {
       if (editingId) {
         const updated = await customerApi.updateCustomer(editingId, form);
-        updateData(
-          'customers',
-          data.customers.map((c) => (c.id === updated.id ? updated : c))
-        );
+        await refreshCustomers();
       } else {
-        const created = await customerApi.createCustomer(form);
-        updateData('customers', [...data.customers, created]);
+        await customerApi.createCustomer(form);
+        await refreshCustomers();
       }
       addAuditLog();
       resetForm();

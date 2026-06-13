@@ -2,6 +2,9 @@ import axiosInstance from './axiosInstance';
 
 const unwrap = (res) => res.data.data;
 
+export const getAllBoms = async () =>
+  unwrap(await axiosInstance.get('/bom'));
+
 export const getBom = async (productId) =>
   unwrap(await axiosInstance.get(`/bom/${productId}`));
 

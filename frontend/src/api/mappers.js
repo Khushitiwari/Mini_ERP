@@ -24,7 +24,10 @@ export const mapProductFromApi = (p) => ({
   costPrice: p.costPrice ?? 0,
   onHand: p.onHandQty ?? p.onHand ?? 0,
   reserved: p.reservedQty ?? p.reserved ?? 0,
-  freeToUse: (p.onHandQty ?? p.onHand ?? 0) - (p.reservedQty ?? p.reserved ?? 0),
+  freeToUse:
+    p.freeToUse ??
+    p.freeToUseQty ??
+    (p.onHandQty ?? p.onHand ?? 0) - (p.reservedQty ?? p.reserved ?? 0),
   procurementStrategy: p.procurementStrategy ?? 'MTS',
   procureOnDemand: p.procureOnDemand ?? false,
   procurementType: p.procurementType ?? null,

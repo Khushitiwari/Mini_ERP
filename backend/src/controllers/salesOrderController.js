@@ -64,11 +64,11 @@ export const confirmSalesOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id, 10);
     const oldOrder = await prisma.salesOrder.findUnique({ where: { id: orderId } });
-    const order = await salesService.confirmSalesOrder(orderId);
+    const { order, procurementActions } = await salesService.confirmSalesOrder(orderId);
 
     await logAudit(req.user.id, 'CONFIRM_SALES_ORDER', 'SalesOrder', order.id, oldOrder, order);
 
-    return successResponse(res, order, 'Sales order confirmed');
+    return successResponse(res, { ...order, procurementActions }, 'Sales order confirmed');
   } catch (err) {
     next(err);
   }

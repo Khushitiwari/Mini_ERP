@@ -8,12 +8,14 @@ import * as manufacturingOrderApi from '../api/manufacturingOrderApi';
 import * as stockApi from '../api/stockApi';
 import * as dashboardApi from '../api/dashboardApi';
 import * as auditLogApi from '../api/auditLogApi';
+import * as bomApi from '../api/bomApi';
 import {
   mapProductFromApi,
   mapPurchaseOrderFromApi,
   mapSalesOrderFromApi,
   mapManufacturingOrderFromApi,
   mapAuditLogFromApi,
+  mapBomFromApi,
 } from '../api/mappers';
 import { showError } from '../utils/helpers';
 import { useAuth } from './AuthContext';
@@ -22,6 +24,7 @@ const EMPTY_DATA = {
   products: [],
   customers: [],
   vendors: [],
+  boms: [],
   salesOrders: [],
   purchaseOrders: [],
   manufacturingOrders: [],
@@ -53,6 +56,43 @@ export const ERPProvider = ({ children }) => {
     return products;
   }, [updateData]);
 
+  const refreshCustomers = useCallback(async () => {
+    const customers = await customerApi.getCustomers();
+    updateData('customers', [...customers]);
+    return customers;
+  }, [updateData]);
+
+  const refreshVendors = useCallback(async () => {
+    const vendors = await vendorApi.getVendors();
+    updateData('vendors', [...vendors]);
+    return vendors;
+  }, [updateData]);
+
+  const refreshBoms = useCallback(async () => {
+    const boms = await bomApi.getAllBoms();
+    const mapped = boms.map(mapBomFromApi);
+    updateData('boms', [...mapped]);
+    return mapped;
+  }, [updateData]);
+
+  const refreshSalesOrders = useCallback(async () => {
+    const orders = await salesOrderApi.getSalesOrders();
+    updateData('salesOrders', orders.map(mapSalesOrderFromApi));
+    return orders;
+  }, [updateData]);
+
+  const refreshPurchaseOrders = useCallback(async () => {
+    const orders = await purchaseOrderApi.getPurchaseOrders();
+    updateData('purchaseOrders', orders.map(mapPurchaseOrderFromApi));
+    return orders;
+  }, [updateData]);
+
+  const refreshManufacturingOrders = useCallback(async () => {
+    const orders = await manufacturingOrderApi.getManufacturingOrders();
+    updateData('manufacturingOrders', orders.map(mapManufacturingOrderFromApi));
+    return orders;
+  }, [updateData]);
+
   const refreshStockLedger = useCallback(
     async (productId) => {
       if (productId) {
@@ -68,7 +108,7 @@ export const ERPProvider = ({ children }) => {
           referenceType: e.referenceType,
           timestamp: e.timestamp,
         }));
-        updateData('stockLedger', mapped);
+        updateData('stockLedger', [...mapped]);
         return mapped;
       }
       return [];
@@ -86,7 +126,7 @@ export const ERPProvider = ({ children }) => {
       const s = stockMap[p.id];
       return mapProductFromApi(s ? { ...p, ...s } : p);
     });
-    updateData('products', merged);
+    updateData('products', [...merged]);
     return merged;
   }, [updateData]);
 
@@ -110,6 +150,7 @@ export const ERPProvider = ({ children }) => {
         products,
         customers,
         vendors,
+        boms,
         salesOrders,
         purchaseOrders,
         manufacturingOrders,
@@ -118,6 +159,7 @@ export const ERPProvider = ({ children }) => {
         productApi.getProducts(),
         customerApi.getCustomers(),
         vendorApi.getVendors(),
+        bomApi.getAllBoms(),
         salesOrderApi.getSalesOrders(),
         purchaseOrderApi.getPurchaseOrders(),
         manufacturingOrderApi.getManufacturingOrders(),
@@ -126,8 +168,9 @@ export const ERPProvider = ({ children }) => {
 
       setData({
         products: products.map(mapProductFromApi),
-        customers,
-        vendors,
+        customers: [...customers],
+        vendors: [...vendors],
+        boms: boms.map(mapBomFromApi),
         salesOrders: salesOrders.map(mapSalesOrderFromApi),
         purchaseOrders: purchaseOrders.map(mapPurchaseOrderFromApi),
         manufacturingOrders: manufacturingOrders.map(mapManufacturingOrderFromApi),
@@ -152,6 +195,41 @@ export const ERPProvider = ({ children }) => {
     }
   }, [isAuthenticated, loadInitialData]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+
+    const poll = async () => {
+      try {
+        const [products, stock, salesOrders, purchaseOrders, manufacturingOrders] =
+          await Promise.all([
+            productApi.getProducts(),
+            stockApi.getStock(),
+            salesOrderApi.getSalesOrders(),
+            purchaseOrderApi.getPurchaseOrders(),
+            manufacturingOrderApi.getManufacturingOrders(),
+          ]);
+        const stockMap = Object.fromEntries(stock.map((s) => [s.id, s]));
+        const mergedProducts = products.map((p) => {
+          const s = stockMap[p.id];
+          return mapProductFromApi(s ? { ...p, ...s } : p);
+        });
+        setData((prev) => ({
+          ...prev,
+          products: mergedProducts,
+          salesOrders: salesOrders.map(mapSalesOrderFromApi),
+          purchaseOrders: purchaseOrders.map(mapPurchaseOrderFromApi),
+          manufacturingOrders: manufacturingOrders.map(mapManufacturingOrderFromApi),
+        }));
+      } catch {
+        /* silent poll failure */
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 4000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   const value = useMemo(
     () => ({
       data,
@@ -160,6 +238,12 @@ export const ERPProvider = ({ children }) => {
       addAuditLog,
       loadInitialData,
       refreshProducts,
+      refreshCustomers,
+      refreshVendors,
+      refreshBoms,
+      refreshSalesOrders,
+      refreshPurchaseOrders,
+      refreshManufacturingOrders,
       refreshStockLedger,
       syncStockFromBackend,
       refreshDashboard,
@@ -172,6 +256,12 @@ export const ERPProvider = ({ children }) => {
       addAuditLog,
       loadInitialData,
       refreshProducts,
+      refreshCustomers,
+      refreshVendors,
+      refreshBoms,
+      refreshSalesOrders,
+      refreshPurchaseOrders,
+      refreshManufacturingOrders,
       refreshStockLedger,
       syncStockFromBackend,
       refreshDashboard,

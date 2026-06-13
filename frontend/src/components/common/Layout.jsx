@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import Button from '@mui/material/Button';
 import { useAuth } from '../../context/AuthContext';
 import { MENU_ITEMS, ROLE_MENU } from '../../utils/helpers';
+import AnimatedTooltip from '../aceternity/AnimatedTooltip';
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -32,13 +34,15 @@ export default function Layout() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="user-info">
-            <strong>{user?.name}</strong>
-            <span>{user?.role}</span>
-          </div>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={handleLogout}>
+          <AnimatedTooltip content={`${user?.name} — ${user?.role}`}>
+            <div className="user-info cursor-default">
+              <strong>{user?.name}</strong>
+              <span>{user?.role}</span>
+            </div>
+          </AnimatedTooltip>
+          <Button variant="outlined" size="small" color="inherit" onClick={handleLogout} sx={{ mt: 1 }}>
             Logout
-          </button>
+          </Button>
         </div>
       </aside>
       <main className="main-content">

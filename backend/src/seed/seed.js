@@ -91,6 +91,9 @@ async function main() {
       salesPrice: 150,
       costPrice: 80,
       onHandQty: 200,
+      procureOnDemand: true,
+      procurementType: 'PURCHASE',
+      defaultVendorId: vendor1.id,
     },
   });
 
