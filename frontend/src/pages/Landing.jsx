@@ -454,7 +454,7 @@ export default function Landing() {
         </Button>
       </Box>
 
-      <Box sx={{ backgroundColor: '#1e1b4b', color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 3 }}>
+      <Box sx={{ backgroundColor: '0 1px 4px rgba(0,0,0,0.06)', color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 3 }}>
         <Typography variant="body2">
           © 2026 Shiv Furniture Works ERP — Built for Odoo Mini ERP Hackathon
         </Typography>
