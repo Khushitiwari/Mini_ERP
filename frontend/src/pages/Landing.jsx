@@ -39,7 +39,7 @@ export default function Landing() {
               width: 36,
               height: 36,
               borderRadius: 2,
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg,rgb(65, 65, 83),rgb(60, 52, 80))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -68,7 +68,7 @@ export default function Landing() {
 
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)',
+          background: 'linear-gradient(135deg,rgb(96, 96, 124) 0%,rgb(95, 85, 117) 50%,rgb(85, 85, 87) 100%)',
           color: 'white',
           px: { xs: 3, md: 10 },
           py: { xs: 8, md: 12 },
