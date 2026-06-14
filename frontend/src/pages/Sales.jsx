@@ -181,26 +181,6 @@ export default function Sales() {
       width: 120,
       valueFormatter: (v) => formatCurrency(v),
     },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 200,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <div className="flex gap-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
-          {getActionLabel(row.status) && (
-            <Button size="small" variant="contained" onClick={() => advanceStatus(row)}>
-              {getActionLabel(row.status)}
-            </Button>
-          )}
-          {!['Fully Delivered', 'Cancelled'].includes(row.status) && (
-            <Button size="small" color="error" variant="outlined" onClick={() => handleCancel(row)}>
-              Cancel
-            </Button>
-          )}
-        </div>
-      ),
-    },
   ];
 
   return (
