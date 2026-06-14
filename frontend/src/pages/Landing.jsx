@@ -423,7 +423,7 @@ export default function Landing() {
 
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: 'linear-gradient(135deg,rgb(96, 96, 124) 0%,rgb(95, 85, 117) 50%,rgb(85, 85, 87) 100%)',
           color: 'white',
           textAlign: 'center',
           px: { xs: 3, md: 10 },
@@ -454,7 +454,7 @@ export default function Landing() {
         </Button>
       </Box>
 
-      <Box sx={{ backgroundColor: '0 1px 4px rgba(0,0,0,0.06)', color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 3 }}>
+      <Box sx={{ backgroundColor: '#1e1b4b', color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 3 }}>
         <Typography variant="body2">
           © 2026 Shiv Furniture Works ERP — Built for Odoo Mini ERP Hackathon
         </Typography>
