@@ -67,14 +67,7 @@ export default function Login() {
               {submitting ? 'Logging in...' : 'Login'}
             </Button>
           </form>
-          <div className="login-hints mt-6">
-            <p><strong>Demo Accounts</strong> (password: password123)</p>
-            {DEMO_ACCOUNTS.map((account) => (
-              <p key={account.email} className="text-sm">
-                {account.email} — {account.role}
-              </p>
-            ))}
-          </div>
+          
         </CardContent>
       </Card>
     </div>
