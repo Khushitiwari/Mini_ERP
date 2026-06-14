@@ -26,7 +26,7 @@ export default function Layout() {
             <NavLink
               key={item.key}
               to={item.path}
-              end={item.path === '/'}
+              end={item.path === '/dashboard'}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
               {item.label}

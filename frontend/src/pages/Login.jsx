@@ -18,7 +18,7 @@ export default function Login() {
   const [error, setError] = useState('');
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -28,7 +28,7 @@ export default function Login() {
     try {
       const { token, user } = await authApi.login(email, password);
       login(token, user);
-      navigate('/');
+      navigate('/dashboard');
     } catch {
       setError('Invalid email or password');
     } finally {

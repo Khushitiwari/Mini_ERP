@@ -5,6 +5,9 @@ const unwrap = (res) => res.data.data;
 export const getManufacturingOrders = async (params) =>
   unwrap(await axiosInstance.get('/manufacturing-orders', { params }));
 
+export const getManufacturingOrderById = async (id) =>
+  unwrap(await axiosInstance.get(`/manufacturing-orders/${id}`));
+
 export const createManufacturingOrder = async (payload) =>
   unwrap(await axiosInstance.post('/manufacturing-orders', payload));
 

@@ -90,10 +90,6 @@ export default function Dashboard() {
 
   const products = data.products || [];
 
-  const chartHeight = { xs: 320, sm: 380, md: 420, lg: 460 };
-  const chartBoxSx = { width: '100%', height: chartHeight, position: 'relative' };
-  const chartOptions = { responsive: true, maintainAspectRatio: false };
-
   return (
     <div className="page">
       <div className="page-header">
@@ -116,14 +112,14 @@ export default function Dashboard() {
         ))}
       </BentoGrid>
 
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Grid container spacing={3} mt={1} alignItems="stretch">
+        <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
+          <Card sx={{ height: '100%', width: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pb: '16px !important' }}>
               <Typography variant="subtitle1" fontWeight={600} mb={2}>
                 Sales Orders by Status
               </Typography>
-              <Box sx={chartBoxSx}>
+              <Box sx={{ flex: 1, position: 'relative', minHeight: 280 }}>
                 <Doughnut
                   data={{
                     labels: ['Draft', 'Confirmed', 'Partially Delivered', 'Fully Delivered', 'Cancelled'],
@@ -141,10 +137,11 @@ export default function Dashboard() {
                     }],
                   }}
                   options={{
-                    ...chartOptions,
+                    maintainAspectRatio: false,
+                    responsive: true,
                     cutout: '65%',
                     plugins: {
-                      legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                      legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
                     },
                   }}
                 />
@@ -153,45 +150,44 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={8}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={12} md={8} sx={{ display: 'flex' }}>
+          <Card sx={{ height: '100%', width: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pb: '16px !important' }}>
               <Typography variant="subtitle1" fontWeight={600} mb={2}>
                 Current Stock Levels
               </Typography>
-              <Box sx={chartBoxSx}>
+              <Box sx={{ flex: 1, position: 'relative', minHeight: 320 }}>
                 <Bar
                   data={{
-                    labels: products.map((p) => (p.name.length > 12 ? `${p.name.slice(0, 12)}…` : p.name)),
+                    labels: products.map((p) => (p.name.length > 14 ? `${p.name.slice(0, 14)}…` : p.name)),
                     datasets: [
                       {
                         label: 'On Hand',
-                        data: products.map((p) => p.onHand),
+                        data: products.map((p) => p.onHandQty ?? p.onHand ?? 0),
                         backgroundColor: '#6366f1',
                         borderRadius: 4,
                       },
                       {
                         label: 'Reserved',
-                        data: products.map((p) => p.reserved),
+                        data: products.map((p) => p.reservedQty ?? p.reserved ?? 0),
                         backgroundColor: '#f59e0b',
                         borderRadius: 4,
                       },
                       {
                         label: 'Free to Use',
-                        data: products.map((p) => p.freeToUse),
+                        data: products.map((p) => (p.onHandQty ?? p.onHand ?? 0) - (p.reservedQty ?? p.reserved ?? 0)),
                         backgroundColor: '#10b981',
                         borderRadius: 4,
                       },
                     ],
                   }}
                   options={{
-                    ...chartOptions,
-                    plugins: {
-                      legend: { position: 'top', labels: { usePointStyle: true } },
-                    },
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true, font: { size: 12 } } } },
                     scales: {
                       x: { grid: { display: false } },
-                      y: { beginAtZero: true, ticks: { stepSize: 10 } },
+                      y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
                     },
                   }}
                 />
@@ -200,13 +196,13 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+          <Card sx={{ height: '100%', width: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pb: '16px !important' }}>
               <Typography variant="subtitle1" fontWeight={600} mb={2}>
                 Manufacturing Orders
               </Typography>
-              <Box sx={chartBoxSx}>
+              <Box sx={{ flex: 1, position: 'relative', minHeight: 280 }}>
                 <Bar
                   data={{
                     labels: ['Draft', 'In Progress', 'Completed', 'Cancelled'],
@@ -224,8 +220,9 @@ export default function Dashboard() {
                     }],
                   }}
                   options={{
-                    ...chartOptions,
                     indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
                       x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
@@ -238,13 +235,13 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+          <Card sx={{ height: '100%', width: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', pb: '16px !important' }}>
               <Typography variant="subtitle1" fontWeight={600} mb={2}>
                 Stock Movement — Last 30 Days
               </Typography>
-              <Box sx={chartBoxSx}>
+              <Box sx={{ flex: 1, position: 'relative', minHeight: 300 }}>
                 <Line
                   data={{
                     labels: stockMovements.map((m) => {
@@ -253,7 +250,7 @@ export default function Dashboard() {
                     }),
                     datasets: [
                       {
-                        label: 'Stock In (Purchase + MFG)',
+                        label: 'Stock In',
                         data: stockMovements.map((m) => m.totalIn),
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16,185,129,0.08)',
@@ -262,7 +259,7 @@ export default function Dashboard() {
                         pointRadius: 3,
                       },
                       {
-                        label: 'Stock Out (Sales + MFG Consume)',
+                        label: 'Stock Out',
                         data: stockMovements.map((m) => m.totalOut),
                         borderColor: '#ef4444',
                         backgroundColor: 'rgba(239,68,68,0.08)',
@@ -273,13 +270,12 @@ export default function Dashboard() {
                     ],
                   }}
                   options={{
-                    ...chartOptions,
-                    plugins: {
-                      legend: { position: 'top', labels: { usePointStyle: true } },
-                    },
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
                     scales: {
                       x: { grid: { display: false } },
-                      y: { beginAtZero: true },
+                      y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
                     },
                   }}
                 />
